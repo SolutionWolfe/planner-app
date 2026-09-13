@@ -1,0 +1,14 @@
+{
+  "name": "Planner",
+  "short_name": "Planner",
+  "description": "Morning check-in and one finishable workout.",
+  "start_url": "/planner-app/",
+  "scope": "/planner-app/",
+  "id": "/planner-app/",
+  "display": "standalone",
+  "background_color": "#EDF0F3",
+  "theme_color": "#2F7D6B",
+  "icons": [
+    { "src": "icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

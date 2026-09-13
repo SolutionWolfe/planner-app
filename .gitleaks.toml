@@ -1,0 +1,10 @@
+# gitleaks configuration for the public app repo.
+# The Supabase anon key in config.js is a JWT by format and public by design (3. Options, H2 plan
+# item 3): it identifies the project and grants nothing on its own. Everything else is scanned.
+title = "planner-app"
+
+[extend]
+useDefault = true
+
+[allowlist]
+paths = ['''^config\.js$''']

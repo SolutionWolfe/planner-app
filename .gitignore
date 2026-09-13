@@ -1,0 +1,17 @@
+# no personal data, ever (D28): no screenshots, no check-ins, no test mornings
+*.png
+*.jpg
+*.jpeg
+*.heic
+*.HEIC
+*.PNG
+!icon.png
+fixtures/
+log/
+# local
+.env
+.env.*
+node_modules/
+.DS_Store
+.claude/
+supabase/
