@@ -1,0 +1,41 @@
+# Turns red when a commit reaches main without a merged pull request. Detection, not prevention:
+# this run is the record that every commit on main came through a pull request, and the alarm when
+# one did not.
+name: main-guard
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  every-commit-came-through-a-pull-request:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check each commit in this push
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.event.after }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -e
+          if echo "$BEFORE" | grep -qE '^0+$'; then range="$AFTER"; else range="$BEFORE..$AFTER"; fi
+          bad=0
+          for sha in $(git rev-list --first-parent "$range"); do
+            merged=$(curl -sS -H "authorization: Bearer $GH_TOKEN" -H "accept: application/vnd.github+json" \
+              "https://api.github.com/repos/$REPO/commits/$sha/pulls" | jq '[.[] | select(.merged_at != null)] | length')
+            if [ "$merged" = "0" ]; then
+              echo "::error::commit $sha reached main without a merged pull request"
+              bad=1
+            else
+              echo "$sha came through a merged pull request"
+            fi
+          done
+          exit $bad

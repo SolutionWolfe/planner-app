@@ -35,8 +35,10 @@ config.js             public configuration
 
 ## Git hook
 
-Commits on `main` are refused by a pre-commit hook (every change is a pull request). Install it once per checkout:
+Commits on `main` and pushes of `main` are refused by hooks (every change is a pull request). Install it once per checkout:
 
 ```bash
-cp scripts/git-hooks/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+cp scripts/git-hooks/pre-commit scripts/git-hooks/pre-push .git/hooks/ && chmod +x .git/hooks/pre-commit .git/hooks/pre-push
 ```
+
+The `main-guard` workflow turns red when a commit reaches `main` without a merged pull request.

@@ -1,0 +1,12 @@
+#!/bin/sh
+# Refuses pushing main from this machine: main changes only by a merge on GitHub.
+# Install once per checkout:
+#   cp scripts/git-hooks/pre-push .git/hooks/pre-push && chmod +x .git/hooks/pre-push
+# GitHub Desktop runs this hook too.
+while read -r local_ref local_sha remote_ref remote_sha; do
+  if [ "$remote_ref" = "refs/heads/main" ]; then
+    echo "pre-push: pushing main is refused. Open a pull request and merge it on GitHub." >&2
+    exit 1
+  fi
+done
+exit 0
