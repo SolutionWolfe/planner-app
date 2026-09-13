@@ -11,7 +11,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: No personal data in the repo (D28; icon.png is the one image allowed)
+      - name: No personal data in the repo (icon.png is the one image allowed)
         run: |
           set -e
           bad=$(git ls-files | grep -Ei '\.(png|jpe?g|heic|gif|webp|mov|mp4)$|^fixtures/|^log/' | grep -vx 'icon.png' || true)
@@ -22,10 +22,14 @@ jobs:
           set -e
           if git grep -nI $'\xE2\x80\x94' -- . ':!.github/workflows/ci.yml'; then echo "Em dash found"; exit 1; fi
 
-      - name: No secret-looking values in the app (only the three public values may appear)
+      - name: Minimal disclosure (no identity, no internal names, no decision references)
         run: |
           set -e
-          if git grep -nE 'sk-ant-|service_role|SUPABASE_SERVICE_ROLE_KEY|VAPID_PRIVATE_KEY|PLANNER_CRON_SECRET' -- . ':!.github/workflows/ci.yml' ':!CLAUDE.md' ':!README.md'; then echo "A private name or value appears in the app"; exit 1; fi
+          # Personal names, home folder paths, internal and security vocabulary, health terms, decision and rule references.
+          # config.js carries the public project address by design; the gitleaks file needs its own vocabulary.
+          words='\bjess\b|jessica|\bwolfe\b|/Users/|allowlist|allowed_signups|confluence|cowork|row.level|\bRLS\b|service_role|SUPABASE_SERVICE_ROLE_KEY|VAPID_PRIVATE_KEY|PLANNER_CRON_SECRET|Personal Planner|wtfbgkyncffvtzacqqng|\bEDS\b|Ehlers|ADHD|hypermobil|labr(al|um)|\bD[0-9]{1,2}\b|\bS-[0-9]+\b|\bR[0-9]\.[0-9]+\b|\bphase [0-9]|Build Plan'
+          if git grep -nIiE "$words" -- . ':!.github/workflows/ci.yml' ':!.gitleaks.toml' ':!config.js'; then echo "A word that must not appear on a public surface was found"; exit 1; fi
+          if git grep -nIiE 'jess|wolfe|/Users/|allowlist|confluence' -- config.js; then echo "config.js may hold only public configuration"; exit 1; fi
 
       - name: Secret scan (gitleaks binary)
         run: |
