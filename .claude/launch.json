@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "planner-app-dev",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["/private/tmp/claude-501/-Users-jess-Documents-Claude-Projects-Fitness/37b5f8e6-dc69-4b86-9f54-ac182052d821/scratchpad/devserver.py"],
+      "port": 8765
+    }
+  ]
+}
