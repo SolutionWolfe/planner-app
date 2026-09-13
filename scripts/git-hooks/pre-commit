@@ -1,0 +1,9 @@
+#!/bin/sh
+# Refuses any commit on main: every change is a pull request. Install once per checkout:
+#   cp scripts/git-hooks/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+# GitHub Desktop runs this hook too, so it protects every route into the repo.
+branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+if [ "$branch" = "main" ]; then
+  echo "pre-commit: commits on main are refused. Create a branch first: git switch -c step-N-name" >&2
+  exit 1
+fi
