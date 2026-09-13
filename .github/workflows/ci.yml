@@ -1,0 +1,40 @@
+name: ci
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: No personal data in the repo (D28; icon.png is the one image allowed)
+        run: |
+          set -e
+          bad=$(git ls-files | grep -Ei '\.(png|jpe?g|heic|gif|webp|mov|mp4)$|^fixtures/|^log/' | grep -vx 'icon.png' || true)
+          if [ -n "$bad" ]; then echo "Personal data or media found:"; echo "$bad"; exit 1; fi
+
+      - name: No em dashes
+        run: |
+          set -e
+          if git grep -nI $'\xE2\x80\x94' -- . ':!.github/workflows/ci.yml'; then echo "Em dash found"; exit 1; fi
+
+      - name: No secret-looking values in the app (only the three public values may appear)
+        run: |
+          set -e
+          if git grep -nE 'sk-ant-|service_role|SUPABASE_SERVICE_ROLE_KEY|VAPID_PRIVATE_KEY|PLANNER_CRON_SECRET' -- . ':!.github/workflows/ci.yml' ':!CLAUDE.md' ':!README.md'; then echo "A private name or value appears in the app"; exit 1; fi
+
+      - name: Secret scan (gitleaks binary)
+        run: |
+          set -e
+          ver=$(curl -sSL https://api.github.com/repos/gitleaks/gitleaks/releases/latest | jq -r .tag_name)
+          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/${ver}/gitleaks_${ver#v}_linux_x64.tar.gz" | tar -xz gitleaks
+          ./gitleaks detect --source . --redact --no-banner --exit-code 1
+
+      - name: JavaScript parses
+        run: |
+          set -e
+          for f in app.js sw.js config.js; do node --check "$f"; done
