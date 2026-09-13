@@ -1,4 +1,4 @@
-# no personal data, ever (D28): no screenshots, no check-ins, no test mornings
+# no personal data, ever: no screenshots, no check-ins, no test data
 *.png
 *.jpg
 *.jpeg

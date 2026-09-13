@@ -1,6 +1,4 @@
-// The approved mockup (phase 2 D7), real. Reads through the anon key and row-level security;
-// every write goes through a named Edge Function with the session token (D30, S-3).
-// No secret here: config.js holds only the three public values.
+// The app. Every read and write goes through the signed-in session; nothing is written from the browser directly.
 (function () {
   "use strict";
   const C = window.PLANNER_CONFIG;
@@ -78,7 +76,12 @@
       body: JSON.stringify(body || {}),
     });
     const json = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(json.error || `${name} failed (${res.status})`);
+    if (!res.ok) {
+      if (res.status === 401) throw new Error("Sign in again.");
+      if (res.status === 404) throw new Error("Not found.");
+      if (res.status >= 500) throw new Error("Something went wrong. Try again.");
+      throw new Error(json.error || "That did not go through.");
+    }
     return json;
   }
 
@@ -149,7 +152,7 @@
     return { done: done + extra, tot: g.exercises.length + extra, full: done === g.exercises.length };
   }
 
-  /** One tap on an exercise. After the workout is saved, or on a past day, a reason is required (R4.12). */
+  /** One tap on an exercise. After the workout is saved, or on a past day, a reason is required. */
   async function tap(plan, gi, ei, kind, label) {
     const p = progress(plan);
     const editing = p.saved || S.date !== denverDate();
@@ -196,13 +199,13 @@
 
   function viewSignin() {
     const step = S.ui.signinEmail ? "code" : "email";
-    return `<div class="tier plain"><div class="t">Planner</div><div class="why">Sign in once on this device. You get an email with a one-time code and a link.</div></div>
+    return `<div class="tier plain"><div class="t">Planner</div><div class="why">Sign in once on this device. You get an email with a one-time code.</div></div>
       ${S.err ? `<div class="err">${esc(S.err)}</div>` : ""}${S.msg ? `<div class="ok">${esc(S.msg)}</div>` : ""}
-      <div class="q"><div class="lab">Email</div><input class="txt" id="email" type="email" autocomplete="email" inputmode="email" value="${esc(S.ui.signinEmail || "")}" placeholder="the address on the allowlist"></div>
+      <div class="q"><div class="lab">Email</div><input class="txt" id="email" type="email" autocomplete="email" inputmode="email" value="${esc(S.ui.signinEmail || "")}" placeholder="your email"></div>
       <div class="foot"><button class="btn primary" data-act="send-code" ${S.busy ? "disabled" : ""}>${step === "code" ? "Send a new code" : "Send me a code"}</button></div>
       ${step === "code" ? `<div class="q" style="margin-top:14px"><div class="lab">Code from the email</div><input class="txt" id="code" inputmode="numeric" autocomplete="one-time-code" placeholder="6 digits"></div>
       <div class="foot"><button class="btn accent" data-act="verify-code" ${S.busy ? "disabled" : ""}>Sign in</button></div>
-      <p class="muted">Inside the home-screen app, use the code. The link in the same email signs in whichever browser opens it.</p>` : ""}
+      <p class="muted">From the home-screen app, use the code.</p>` : ""}
       ${S.busy ? `<p class="muted">${esc(S.busy)}</p>` : ""}`;
   }
 
@@ -341,14 +344,14 @@
     const standalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
     const canPush = "serviceWorker" in navigator && "PushManager" in window;
     const perm = ("Notification" in window) ? Notification.permission : "unsupported";
-    return `${tierBox("plain", "Settings", `Signed in as ${esc(S.session && S.session.user ? S.session.user.email : "")}.`)}
+    return `${tierBox("plain", "Settings", "Signed in on this device.")}
       <div class="stack">
         <div class="tier plain"><div class="t">Notifications</div><div class="why">${standalone ? "Home-screen app: good." : "Open the app from its home-screen icon to allow notifications (Share, Add to Home Screen)."} Permission: ${esc(perm)}.${canPush ? "" : " Push is not available in this browser."}</div></div>
         <button class="btn accent" data-act="enable-push" ${canPush && !S.busy ? "" : "disabled"}>Allow notifications on this device</button>
         <button class="btn" data-act="disable-push" ${canPush && !S.busy ? "" : "disabled"}>Turn off notifications on this device</button>
         <button class="btn" data-act="start-test">Start a test check-in</button>
         <button class="btn" data-act="sign-out">Sign out</button>
-        <p class="muted">Time zone America/Denver. Everything you see is read live from the Supabase project; nothing is stored on the phone beyond your sign-in and where you left off.</p>
+        <p class="muted">Everything you see is read live; nothing is stored on the phone beyond your sign-in and where you left off.</p>
       </div>`;
   }
 
@@ -380,9 +383,9 @@
         const email = ($("#email").value || "").trim();
         if (!email) { S.err = "Type the email address first."; render(); return; }
         await busy("Sending", async () => {
-          const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + C.appPath, shouldCreateUser: false } });
-          if (error) throw new Error(error.message);
-          S.ui.signinEmail = email; saveUI(); S.msg = "Sent. Check your email for the code.";
+          // A refused address and a sent code read the same on screen.
+          await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + C.appPath, shouldCreateUser: false } }).catch(() => ({}));
+          S.ui.signinEmail = email; saveUI(); S.msg = "If that address can sign in here, a code is on its way.";
         });
         return;
       }
@@ -391,7 +394,7 @@
         if (!token) { S.err = "Type the code from the email."; render(); return; }
         await busy("Signing in", async () => {
           const { error } = await sb.auth.verifyOtp({ email: S.ui.signinEmail, token, type: "email" });
-          if (error) throw new Error(error.message);
+          if (error) throw new Error("That code did not work. Try again or send a new one.");
           S.msg = null;
         });
         return;
@@ -538,7 +541,7 @@
   function loadImage(url) {
     return new Promise((resolve, reject) => { const img = new Image(); img.onload = () => resolve(img); img.onerror = () => reject(new Error("this image could not be opened; send the screenshot, not a photo")); img.src = url; });
   }
-  /** PNG and JPEG go up as they are; anything else (HEIC) is drawn to a canvas and sent as JPEG (D11, HEIC closed 2026-09-07). */
+  /** PNG and JPEG go up as they are; anything else (a HEIC photo) is drawn to a canvas and sent as JPEG. */
   async function fileToShot(file) {
     const isPng = file.type === "image/png", isJpeg = file.type === "image/jpeg";
     if ((isPng || isJpeg) && file.size <= 9 * 1024 * 1024) {
@@ -571,7 +574,7 @@
     const reg = await navigator.serviceWorker.ready;
     const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(C.vapidPublicKey) });
     const j = sub.toJSON();
-    await fn("push-subscribe", { endpoint: j.endpoint, keys: j.keys, device_label: /iPhone|iPad/.test(navigator.userAgent) ? "iPhone" : "browser" });
+    await fn("push-subscribe", { endpoint: j.endpoint, keys: j.keys, device_label: "phone" });
   }
   async function disablePush() {
     const reg = await navigator.serviceWorker.ready;

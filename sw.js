@@ -1,6 +1,5 @@
-// Service worker, scoped to /planner-app/ (H2 plan item 5). Two jobs: show every push as a
-// notification (Safari revokes permission if a push arrives and nothing is shown), and keep the
-// app shell available offline. Data is never cached; every read goes to Supabase live.
+// Service worker, scoped to /planner-app/. Two jobs: show every push as a notification, and keep
+// the app shell available offline. Data is never cached.
 const VERSION = "planner-app-v1";
 const SHELL = ["./", "./index.html", "./app.css", "./app.js", "./config.js", "./manifest.webmanifest", "./icon.png"];
 
