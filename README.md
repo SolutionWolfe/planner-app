@@ -32,3 +32,11 @@ manifest.webmanifest  home-screen install
 icon.png              the app icon
 config.js             public configuration
 ```
+
+## Git hook
+
+Commits on `main` are refused by a pre-commit hook (every change is a pull request). Install it once per checkout:
+
+```bash
+cp scripts/git-hooks/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+```
