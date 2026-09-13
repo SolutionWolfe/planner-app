@@ -203,9 +203,10 @@
       ${S.err ? `<div class="err">${esc(S.err)}</div>` : ""}${S.msg ? `<div class="ok">${esc(S.msg)}</div>` : ""}
       <div class="q"><div class="lab">Email</div><input class="txt" id="email" type="email" autocomplete="email" inputmode="email" value="${esc(S.ui.signinEmail || "")}" placeholder="your email"></div>
       <div class="foot"><button class="btn primary" data-act="send-code" ${S.busy ? "disabled" : ""}>${step === "code" ? "Send a new code" : "Send me a code"}</button></div>
-      ${step === "code" ? `<div class="q" style="margin-top:14px"><div class="lab">Code from the email</div><input class="txt" id="code" inputmode="numeric" autocomplete="one-time-code" placeholder="6 digits"></div>
+      ${step === "code" ? `<div class="q" style="margin-top:14px"><div class="lab">Paste the link from the email</div><input class="txt" id="link" type="url" inputmode="url" autocomplete="off" placeholder="long-press the link in the email, Copy, paste here"></div>
+      <div class="q"><div class="lab">Or the code, if the email has one</div><input class="txt" id="code" inputmode="numeric" autocomplete="one-time-code" placeholder="6 digits"></div>
       <div class="foot"><button class="btn accent" data-act="verify-code" ${S.busy ? "disabled" : ""}>Sign in</button></div>
-      <p class="muted">From the home-screen app, use the code.</p>` : ""}
+      <p class="muted">From the home-screen app, paste the link or type the code. Opening the link in Mail signs in the browser instead.</p>` : ""}
       ${S.busy ? `<p class="muted">${esc(S.busy)}</p>` : ""}`;
   }
 
@@ -390,11 +391,20 @@
         return;
       }
       case "verify-code": {
+        const link = ($("#link").value || "").trim();
         const token = ($("#code").value || "").replace(/\s/g, "");
-        if (!token) { S.err = "Type the code from the email."; render(); return; }
+        if (!link && !token) { S.err = "Paste the link from the email, or type the code."; render(); return; }
         await busy("Signing in", async () => {
-          const { error } = await sb.auth.verifyOtp({ email: S.ui.signinEmail, token, type: "email" });
-          if (error) throw new Error("That code did not work. Try again or send a new one.");
+          let result;
+          if (link) {
+            // Only the token and type values are read from the pasted address; nothing is fetched from it.
+            const parsed = linkTokens(link);
+            if (!parsed) throw new Error("That does not look like the sign-in link. Long-press the link in the email, Copy, and paste it here.");
+            result = await sb.auth.verifyOtp({ token_hash: parsed.token_hash, type: parsed.type });
+          } else {
+            result = await sb.auth.verifyOtp({ email: S.ui.signinEmail, token, type: "email" });
+          }
+          if (result.error) throw new Error("That did not work. Send a new email and try again.");
           S.msg = null;
         });
         return;
@@ -558,6 +568,21 @@
       const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
       return { name: file.name.replace(/\.\w+$/, "") + ".jpg", base64: dataUrl.split(",")[1], preview: dataUrl };
     } finally { URL.revokeObjectURL(url); }
+  }
+
+  // ---------- sign-in link ----------
+  /** The token hash and type carried by a pasted sign-in link, or null. Handles a link that was wrapped or padded by the mail app. */
+  function linkTokens(text) {
+    const m = /https?:\/\/[^\s"'<>]+/.exec(text);
+    if (!m) return null;
+    let url;
+    try { url = new URL(m[0]); } catch { return null; }
+    const p = url.searchParams;
+    const token_hash = p.get("token") || p.get("token_hash") || "";
+    const type = p.get("type") || "magiclink";
+    if (!token_hash || !/^[A-Za-z0-9_-]{10,}$/.test(token_hash)) return null;
+    if (!["magiclink", "email", "signup", "recovery", "invite"].includes(type)) return null;
+    return { token_hash, type };
   }
 
   // ---------- push ----------
