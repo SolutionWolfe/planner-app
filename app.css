@@ -191,3 +191,6 @@ code{font-family:var(--mono);font-size:12px}
 .ycard.closed{opacity:.8}
 .ycard.one{display:block;width:100%;text-align:left;font:inherit;font-size:14px;color:var(--muted);cursor:pointer}
 .cellrow .tmpl{margin-left:0}
+.item{display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:10px;font-size:15px}
+.item button{font:inherit;font-size:14px;padding:9px 12px;border-radius:8px;border:1px solid var(--line);background:var(--surface2);color:var(--ink);cursor:pointer;min-height:40px}
+.item button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}

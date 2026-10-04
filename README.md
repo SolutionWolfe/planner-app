@@ -13,7 +13,7 @@ That is the whole setup. Notifications and the one-time sign-in work only from t
 
 ## Use
 
-- **Home.** The app opens on today: the date, where the last plan day ended, and what is next. Start today opens the morning check-in; a plan in progress shows its blocks; Check in again makes a new plan that takes the place of the unfinished part of the earlier one; a day left unfinished can be closed in two taps, which records what was left as skipped.
+- **Home.** The app opens on today: the date, where the last plan day ended, and what is next. Start today opens the morning check-in; a plan in progress shows its blocks; Check in again makes a new plan that takes the place of the unfinished part of the earlier one; a day left unfinished can be closed in two taps, which records what was left as skipped; any item can be marked done first, after a check of what counts as done.
 - **Check-in.** A notification arrives in the morning. Tap it, answer three questions by tapping (next commitment, anything unusual, how you feel), attach your Oura screenshots, and tap Get my plan. One follow-up question may come back first.
 - **Plan.** Tier and why, total minutes, then the groups. Tap a group for its exercises, tap an exercise for the detail. Check, skip, or add; nothing is lost if you close the app mid-workout.
 - **End workout.** Counts what was done, takes an optional note, and lands on Today's Calendar.
