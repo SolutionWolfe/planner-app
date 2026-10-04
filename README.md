@@ -19,7 +19,7 @@ That is the whole setup. Notifications and the one-time sign-in work only from t
 - **Today's Calendar.** The day's entries in order. Start and done taps are optional.
 - **Check-in #2 and #3.** Any time later, from Today's Calendar.
 - **Days.** Any past day. Changing a saved day asks for a reason.
-- **Settings.** Notifications on or off for this device, a test check-in, sign out.
+- **Settings.** Notifications on or off for this device, a test check-in, sign out. Under Rules: thresholds, the selection grid, the library and the note templates, each change saved with a reason and in force from tomorrow unless you apply it today; History lists every change.
 
 ## What is in here
 
@@ -27,6 +27,7 @@ That is the whole setup. Notifications and the one-time sign-in work only from t
 index.html            the page
 app.css               styles
 app.js                the app
+rules.js              the rules screens under Settings
 sw.js                 service worker (notifications, offline shell)
 manifest.webmanifest  home-screen install
 icon.png              the app icon

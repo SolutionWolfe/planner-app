@@ -111,3 +111,71 @@ input.opt[disabled]{opacity:.4}
 .home .big{font-size:17px;padding:16px}
 .stack{display:flex;flex-direction:column;gap:8px}
 @media (prefers-reduced-motion:no-preference){.row,.box,.btn,.opt{transition:background .15s,border-color .15s,opacity .15s}}
+
+/* Settings, Rules */
+.card{border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:var(--surface);margin:0 0 10px}
+.card .h{font-weight:700;font-size:15px}
+.card .line{font-size:14px;margin-top:4px}
+.link{font:inherit;font-size:inherit;background:none;border:0;padding:0;color:var(--accent);text-decoration:underline;cursor:pointer}
+.kv{display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
+.kv:last-child{border-bottom:0}
+.kv .k{font-size:14px;min-width:0}
+.kv .k small{display:block;color:var(--muted);font-size:12px}
+.kv input{font:inherit;font-family:var(--mono);font-size:16px;width:76px;padding:8px 6px;text-align:right;border:1px solid var(--line);border-radius:8px;background:var(--surface2);color:var(--ink)}
+.kv .u{font-family:var(--mono);font-size:12px;color:var(--muted);margin-left:4px}
+.kv .ro{font-family:var(--mono);font-size:14px}
+.kvb{white-space:nowrap}
+.x{font:inherit;font-size:12px;color:var(--muted);background:none;border:1px solid var(--line);border-radius:8px;padding:8px 10px;cursor:pointer;min-height:36px}
+.retired{opacity:.55}
+.retired .k{text-decoration:line-through}
+.tmpl,.grp{display:inline-block;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:1px 7px;margin-left:6px;vertical-align:1px;text-decoration:none}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 10px}
+.tabs button{font:inherit;font-size:13px;padding:8px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;min-height:38px}
+.tabs button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.gridwrap{overflow-x:auto;margin:8px 0 10px}
+.grid{border-collapse:collapse;font-size:12px;min-width:640px;background:var(--surface)}
+.grid th,.grid td{border:1px solid var(--line);padding:6px;vertical-align:top;text-align:left}
+.grid th{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:400}
+.grid td.c{cursor:pointer;min-width:84px}
+.grid td.bad{background:var(--red-bg);color:var(--red)}
+.cellb{font-size:11px;color:var(--muted);margin-bottom:4px}
+.cellb b{display:block;font-size:12px;color:var(--ink)}
+.grid .tmpl{margin-left:0}
+.blk{border:1px solid var(--line);border-radius:14px;padding:10px 14px;background:var(--surface);display:flex;flex-direction:column}
+.blk .nm{font-weight:700;font-size:15px}
+.addset{font:inherit;font-size:13px;align-self:flex-start;background:none;border:1px solid var(--line);border-radius:8px;padding:8px 10px;cursor:pointer;color:var(--ink);min-height:38px;margin-top:6px}
+.rowbtns{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 10px}
+.rowbtns .addset{margin-top:0}
+.reason{display:flex;flex-direction:column;gap:6px;margin:10px 0 6px}
+.reason input{font:inherit;font-size:16px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);width:100%;min-height:44px}
+.reason input.need{border-color:var(--red)}
+.tpl textarea{font:inherit;font-size:16px;width:100%;min-height:90px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);resize:vertical}
+.preview{background:var(--surface2);border-left:4px solid var(--accent);padding:10px 12px;border-radius:0 10px 10px 0;font-size:15px;margin:8px 0;white-space:pre-wrap}
+.hist{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:10px}
+.hist b{color:var(--ink);font-weight:400;font-size:14px}
+.foot.col{flex-direction:column}
+.btn.quiet{background:transparent;border-color:transparent;color:var(--muted);font-size:14px}
+.btn.dark{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+code{font-family:var(--mono);font-size:12px}
+.sheetbg{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:2}
+.sheet{position:fixed;left:0;right:0;bottom:0;margin:0 auto;max-width:480px;max-height:90vh;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:22px 22px 0 0;padding:14px 14px calc(14px + env(safe-area-inset-bottom));box-shadow:0 -8px 30px rgba(0,0,0,.18);display:none;flex-direction:column;gap:10px;z-index:3}
+.sheet.on{display:flex}
+.sheet .h2{font-weight:700;font-size:16px}
+.sheet .acts{display:flex;gap:8px;flex-wrap:wrap}
+.sheet .acts button{flex:1}
+.sheet .card{margin:0}
+.fld{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted)}
+.fld span{letter-spacing:.04em;text-transform:uppercase}
+.fld input[type=text],.fld input[type=number],.fld select{font:inherit;font-size:16px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);width:100%;min-height:42px}
+.fld2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mmss{display:flex;align-items:center;gap:4px;font-size:13px}
+.mmss input{min-width:0}
+.gchips{display:flex;flex-wrap:wrap;gap:6px}
+.gchips button{font:inherit;font-size:13px;padding:8px 10px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;text-transform:none;letter-spacing:0}
+.gchips button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.cellrow{display:grid;grid-template-columns:1fr auto auto auto;gap:4px;align-items:center;padding:6px 8px;border:1px solid var(--line);border-radius:10px;font-size:14px}
+.cellrow button{font:inherit;font-size:13px;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface2);color:var(--ink);cursor:pointer;min-height:36px}
+.pick{display:flex;flex-direction:column;gap:4px}
+.pick .pg{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+.pick button{font:inherit;font-size:14px;text-align:left;padding:9px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.pick button:disabled{opacity:.45;cursor:default}
