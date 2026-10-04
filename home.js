@@ -12,6 +12,7 @@
   const H = { today: null, days: [], loaded: false, loading: false, open: false, sheet: false, swept: null, choice: {}, verify: null };
   const REASON_DONE = "done late, recorded next morning";
   const keyOf = (b) => `${b.plan_id}.${b.group_index}`;
+  const dur = (sec) => { sec = Math.round(sec || 0); const m = Math.floor(sec / 60), r = sec % 60; return m && r ? `${m} min ${r} s` : m ? `${m} min` : `${r} s`; };
 
   // ---------- data ----------
   const longDate = (date) => {
@@ -87,13 +88,13 @@
       const b = open.find((x) => keyOf(x) === H.verify.key);
       body = `<div class="h2">${esc(b ? b.name : "")}</div>
         <p class="muted">What counts as done. Check or change, then Done.</p>
-        <label class="fld"><span>Minutes</span><input type="number" id="v-min" inputmode="numeric" min="0" max="600" value="${esc(H.verify.minutes)}"></label>
+        <div class="fld"><span>Time</span><div class="mmss"><input type="number" id="v-min" inputmode="numeric" min="0" max="600" placeholder="0" value="${esc(H.verify.min)}" aria-label="minutes"> min <input type="number" id="v-sec" inputmode="numeric" min="0" max="59" placeholder="0" value="${esc(H.verify.sec)}" aria-label="seconds"> s</div></div>
         <p class="muted">${b && b.minutes != null ? `Planned: ${b.minutes} minutes. ` : ""}Recorded as done, with the reason "${REASON_DONE}".</p>
         <div class="acts"><button class="btn sm" data-h="verify-cancel">Cancel</button><button class="btn sm dark" data-h="verify-done">Done</button></div>`;
     } else {
       body = `<div class="h2">Close ${isYesterday ? "yesterday" : esc(X.niceDate(y.date))}</div>
         <p class="muted">What is left from ${esc(longDate(y.date).split(",")[0])}. Skip all in one more tap, or mark one Done: that opens what counts as done so you can check or change it.</p>
-        <div class="stack">${open.map((b) => { const c = H.choice[keyOf(b)]; const done = c && c.action === "done"; return `<div class="item"><span>${esc(b.name)}${done && c.minutes !== "" ? ` <span class="min">${esc(c.minutes)} min</span>` : ""}</span><button data-h="item-skip" data-k="${keyOf(b)}" aria-pressed="${!done}">Skip</button><button data-h="item-done" data-k="${keyOf(b)}" aria-pressed="${!!done}">${done ? "Done ✓" : "Done"}</button></div>`; }).join("")}</div>
+        <div class="stack">${open.map((b) => { const c = H.choice[keyOf(b)]; const done = c && c.action === "done"; return `<div class="item"><span>${esc(b.name)}${done && c.seconds != null ? ` <span class="min">${esc(dur(c.seconds))}</span>` : ""}</span><button data-h="item-skip" data-k="${keyOf(b)}" aria-pressed="${!done}">Skip</button><button data-h="item-done" data-k="${keyOf(b)}" aria-pressed="${!!done}">${done ? "Done ✓" : "Done"}</button></div>`; }).join("")}</div>
         <div class="acts"><button class="btn sm" data-h="close-cancel">Cancel</button><button class="btn sm dark" data-h="close-save">Close ${isYesterday ? "yesterday" : "the day"}</button></div>`;
     }
     return `<div class="sheetbg" data-h="close-cancel"></div><div class="sheet on" role="dialog" aria-modal="true">${S.err ? `<div class="err">${esc(S.err)}</div>` : ""}${body}</div>`;
@@ -154,14 +155,16 @@
       const y = lastPlanDay(), b = y && y.blocks.find((x) => keyOf(x) === el.dataset.k);
       if (!b) return;
       const had = H.choice[el.dataset.k];
-      H.verify = { key: el.dataset.k, minutes: had ? had.minutes : (b.minutes != null ? String(b.minutes) : "") };
+      const sec = had && had.seconds != null ? had.seconds : (b.minutes != null ? Math.round(Number(b.minutes) * 60) : null);
+      H.verify = { key: el.dataset.k, min: sec == null ? "" : String(Math.floor(sec / 60) || ""), sec: sec == null ? "" : String(sec % 60 || "") };
       render();
     },
     "verify-cancel": () => { H.verify = null; S.err = null; render(); },
     "verify-done": () => {
-      const raw = ((document.querySelector("#v-min") || {}).value || "").trim();
-      if (raw !== "" && !(Number(raw) >= 0 && Number(raw) <= 600)) { S.err = "Minutes must be a number."; render(); return; }
-      H.choice[H.verify.key] = { action: "done", minutes: raw === "" ? "" : String(Math.round(Number(raw))) };
+      const read = (id) => ((document.querySelector(id) || {}).value || "").trim();
+      const m = read("#v-min"), sc = read("#v-sec");
+      if ([m, sc].some((v) => v !== "" && !(Number(v) >= 0 && Number(v) <= 6000))) { S.err = "Time must be minutes and seconds."; render(); return; }
+      H.choice[H.verify.key] = { action: "done", seconds: m === "" && sc === "" ? null : Math.round(Number(m || 0) * 60 + Number(sc || 0)) };
       H.verify = null; S.err = null;
       render();
     },
@@ -172,8 +175,8 @@
       await busy("Closing", async () => {
         const done = y.blocks.filter((b) => b.status === "open" && H.choice[keyOf(b)] && H.choice[keyOf(b)].action === "done");
         for (const b of done) {
-          const minutes = H.choice[keyOf(b)].minutes;
-          await fn("event", { plan_id: b.plan_id, group_index: b.group_index, kind: "check", reason: REASON_DONE, note: minutes === "" ? undefined : `minutes: ${minutes}` });
+          const planned = b.minutes != null ? Math.round(Number(b.minutes) * 60) : null;
+          await fn("set-event", { plan_id: b.plan_id, group_index: b.group_index, kind: "block_done", reason: REASON_DONE, planned: { seconds: planned }, actual: { seconds: H.choice[keyOf(b)].seconds ?? planned } });
         }
         const r = await fn("day-close", { date: y.date });
         H.sheet = false; H.choice = {}; H.verify = null;

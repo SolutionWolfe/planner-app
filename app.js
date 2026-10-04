@@ -130,15 +130,12 @@
 
   /** Replays the events of a plan: per-exercise state, extras per group, whether the workout was saved. */
   function progress(plan) {
-    const st = {}, last = {}, extras = {};
+    const st = {}, last = {}, extras = {}, whole = {};
     let saved = false;
     for (const e of S.events[plan.id] || []) {
       if (e.group_index == null && e.kind === "done") { saved = true; continue; }
-      if (e.group_index != null && e.exercise_index == null && ["check", "uncheck", "skip"].includes(e.kind)) {
-        const g = groupsOf(plan)[e.group_index];
-        (g ? g.exercises : []).forEach((_, ei) => { st[`${e.group_index}.${ei}`] = e.kind === "check" ? "done" : e.kind === "skip" ? "skip" : ""; });
-        continue;
-      }
+      if (e.group_index != null && e.exercise_index == null) { if (e.kind === "check" || e.kind === "skip") whole[e.group_index] = e.kind === "check" ? "done" : "skip"; continue; }
+      if (e.set_index != null) continue; // a change to one set; the block screen reads those
       const key = `${e.group_index}.${e.exercise_index}`;
       if (e.kind === "check") st[key] = "done";
       else if (e.kind === "uncheck") st[key] = "";
@@ -146,6 +143,8 @@
       else if (e.kind === "add") (extras[e.group_index] = extras[e.group_index] || []).push(e);
       if (["check", "uncheck", "skip"].includes(e.kind)) last[key] = e.id;
     }
+    // A tap on a whole block (closing a past day) fills in only the exercises her own taps left undecided.
+    Object.keys(whole).forEach((gi) => { const g = groupsOf(plan)[gi]; (g ? g.exercises : []).forEach((_, ei) => { if (!st[`${gi}.${ei}`]) st[`${gi}.${ei}`] = whole[gi]; }); });
     return { st, last, extras, saved };
   }
   function groupStats(plan, gi) {
@@ -661,6 +660,6 @@
     }
   }
   // What the rules screens (rules.js) use from here.
-  window.PlannerCtx = { sb, fn, esc, busy, go, render, tierBox, S, denverDate, niceDate, loadDay };
+  window.PlannerCtx = { sb, fn, esc, busy, go, render, tierBox, S, denverDate, niceDate, loadDay, planFor, groupsOf, progress };
   start();
 })();

@@ -1,7 +1,7 @@
 // Service worker, scoped to /planner-app/. Two jobs: show every push as a notification, and keep
 // the app shell available offline. Data is never cached.
-const VERSION = "planner-app-v5";
-const SHELL = ["./", "./index.html", "./app.css", "./app.js", "./rules.js", "./home.js", "./config.js", "./manifest.webmanifest", "./icon.png"];
+const VERSION = "planner-app-v6";
+const SHELL = ["./", "./index.html", "./app.css", "./app.js", "./rules.js", "./home.js", "./sets.js", "./config.js", "./manifest.webmanifest", "./icon.png"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(VERSION).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
