@@ -13,9 +13,9 @@ That is the whole setup. Notifications and the one-time sign-in work only from t
 
 ## Use
 
-- **Home.** The app opens on today: the date, where the last plan day ended, and what is next. Start today opens the morning check-in; a plan in progress shows its blocks; Check in again makes a new plan that takes the place of the unfinished part of the earlier one; a day left unfinished can be closed in two taps, which records what was left as skipped.
+- **Home.** The app opens on today: the date, where the last plan day ended, and what is next. Start today opens the morning check-in; a plan in progress shows its blocks; Check in again makes a new plan that takes the place of the unfinished part of the earlier one; a day left unfinished can be closed in two taps, which records what was left as skipped; any item can be marked done first, with the time it took.
 - **Check-in.** A notification arrives in the morning. Tap it, answer three questions by tapping (next commitment, anything unusual, how you feel), attach your Oura screenshots, and tap Get my plan. One follow-up question may come back first.
-- **Plan.** Tier and why, total minutes, then the groups. Tap a group for its exercises, tap an exercise for the detail. Check, skip, or add; nothing is lost if you close the app mid-workout.
+- **Plan.** Tier and why, total minutes, then the blocks. Tap a block for its exercises, each with its sets: change the reps, the time (minutes and seconds), the weight or the band, add or remove a set, and tap a set when it is done. Every change is saved as it is made; a change to a past day asks for a reason once. Tap an exercise's name for the detail.
 - **End workout.** Counts what was done, takes an optional note, and lands on Today's Calendar.
 - **Today's Calendar.** The day's entries in order. Start and done taps are optional.
 - **Check-in #2 and #3.** Any time later, from Today's Calendar.
@@ -30,6 +30,7 @@ app.css               styles
 app.js                the app
 rules.js              the rules screens under Settings
 home.js               the home screen for today
+sets.js               the block screen with its sets
 sw.js                 service worker (notifications, offline shell)
 manifest.webmanifest  home-screen install
 icon.png              the app icon

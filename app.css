@@ -191,3 +191,23 @@ code{font-family:var(--mono);font-size:12px}
 .ycard.closed{opacity:.8}
 .ycard.one{display:block;width:100%;text-align:left;font:inherit;font-size:14px;color:var(--muted);cursor:pointer}
 .cellrow .tmpl{margin-left:0}
+.item{display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:10px;font-size:15px}
+.item button{font:inherit;font-size:14px;padding:9px 12px;border-radius:8px;border:1px solid var(--line);background:var(--surface2);color:var(--ink);cursor:pointer;min-height:40px}
+.item button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+/* The block screen: exercises with their sets */
+.exc .nm{display:flex;align-items:center;flex-wrap:wrap;gap:2px}
+.exc .nm .link{font-weight:700;font-size:15px;color:var(--ink);text-align:left}
+.exc .cue{color:var(--muted);font-size:13px;margin:2px 0 8px}
+.exc.isskip{opacity:.6}
+.tmpl.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.sets{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.set{display:grid;grid-template-columns:34px 1fr auto;gap:8px;align-items:center;padding:7px 8px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.set.done{background:var(--surface2)}
+.set .ring{cursor:pointer;width:32px;height:32px;padding:0;font:inherit;font-family:var(--mono);font-size:12px;background:var(--surface);color:var(--muted)}
+.set .ring.full{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.set .f{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-family:var(--mono);font-size:12px;color:var(--muted);min-width:0}
+.set .f input,.set .f select{font:inherit;font-family:var(--mono);font-size:16px;padding:6px 2px;text-align:center;border:1px solid var(--line);border-radius:8px;background:var(--surface2);color:var(--ink);min-height:38px}
+.set .f input{width:50px}
+.set .f select{width:auto;text-align:left;padding-inline:4px;font-size:14px}
+.mmss input{width:70px}
