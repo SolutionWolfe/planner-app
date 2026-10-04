@@ -27,7 +27,7 @@ jobs:
           set -e
           # Personal names, home folder paths, internal and security vocabulary, health terms, decision and rule references.
           # config.js carries the public project address by design; the gitleaks file needs its own vocabulary.
-          words='\bjess\b|jessica|\bwolfe\b|/Users/|allowlist|allowed_signups|confluence|cowork|row.level|\bRLS\b|service_role|SUPABASE_SERVICE_ROLE_KEY|VAPID_PRIVATE_KEY|PLANNER_CRON_SECRET|Personal Planner|wtfbgkyncffvtzacqqng|\bEDS\b|Ehlers|ADHD|hypermobil|labr(al|um)|\bD[0-9]{1,2}\b|\bS-[0-9]+\b|\bR[0-9]\.[0-9]+\b|\bphase [0-9]|Build Plan'
+          words='\bjess\b|jessica|\bwolfe\b|/Users/|allowlist|allowed_signups|confluence|cowork|row.level|\bRLS\b|service_role|SUPABASE_SERVICE_ROLE_KEY|VAPID_PRIVATE_KEY|PLANNER_CRON_SECRET|Personal Planner|wtfbgkyncffvtzacqqng|\bEDS\b|Ehlers|ADHD|hypermobil|labr(al|um)|\bD[0-9]{1,2}\b|\bS-[0-9]+\b|\bR[0-9]\.[0-9]+\b|\bphase [0-9]|Build Plan|\barcher\b'
           if git grep -nIiE "$words" -- . ':!.github/workflows/ci.yml' ':!.gitleaks.toml' ':!config.js'; then echo "A word that must not appear on a public surface was found"; exit 1; fi
           if git grep -nIiE 'jess|wolfe|/Users/|allowlist|confluence' -- config.js; then echo "config.js may hold only public configuration"; exit 1; fi
 
@@ -41,4 +41,4 @@ jobs:
       - name: JavaScript parses
         run: |
           set -e
-          for f in app.js sw.js config.js; do node --check "$f"; done
+          for f in app.js rules.js sw.js config.js; do node --check "$f"; done

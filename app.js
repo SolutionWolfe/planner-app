@@ -4,7 +4,6 @@
   const C = window.PLANNER_CONFIG;
   const TZ = "America/Denver";
   const FEELS = [["good", "Good"], ["okay", "Okay"], ["rough", "Rough"], ["pain", "Pain somewhere"]];
-  const PREP_NAMES = { "Walk Archer": 35, "Coffee": 35, "Shower and get ready": 35 };
 
   const sb = window.supabase.createClient(C.supabaseUrl, C.anonKey, {
     auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: "implicit" },
@@ -181,11 +180,16 @@
       if (S.msg) html += `<div class="ok">${esc(S.msg)}</div>`;
       if (S.busy) html += `<div class="muted" style="padding:6px 4px">${esc(S.busy)}</div>`;
       const views = { home: viewHome, checkin: viewCheckin, followup: viewFollowup, summary: viewSummary, group: viewGroup, exercise: viewExercise, end: viewEnd, calendar: viewCalendar, days: viewDays, settings: viewSettings };
-      html += (views[v] || viewHome)();
+      const ext = extView(v);
+      html += ext ? ext.render() : (views[v] || viewHome)();
     }
     $app.innerHTML = html;
     bind();
+    const ext = extView(v);
+    if (ext) ext.bind();
   }
+  /** A screen registered by another script file (the rules screens). */
+  function extView(v) { return (window.PlannerViews || {})[v] || null; }
 
   function tierBox(cls, title, why) {
     return `<div class="tier ${cls}"><div class="t">${esc(title)}</div><div class="why">${esc(why)}</div></div>`;
@@ -351,6 +355,12 @@
         <button class="btn accent" data-act="enable-push" ${canPush && !S.busy ? "" : "disabled"}>Allow notifications on this device</button>
         <button class="btn" data-act="disable-push" ${canPush && !S.busy ? "" : "disabled"}>Turn off notifications on this device</button>
         <button class="btn" data-act="start-test">Start a test check-in</button>
+        <div class="tier plain"><div class="t">Rules</div><div class="why">The numbers, the grid and the library the plan is built from. Every change needs a reason and takes effect tomorrow unless you apply it today.</div></div>
+        <button class="btn" data-act="open-ext" data-view="rules-thr">Thresholds</button>
+        <button class="btn" data-act="open-ext" data-view="rules-sel">Selection grid</button>
+        <button class="btn" data-act="open-ext" data-view="rules-lib">Library</button>
+        <button class="btn" data-act="open-ext" data-view="rules-tpl">Note templates</button>
+        <button class="btn" data-act="open-ext" data-view="rules-hist">History</button>
         <button class="btn" data-act="sign-out">Sign out</button>
         <p class="muted">Everything you see is read live; nothing is stored on the phone beyond your sign-in and where you left off.</p>
       </div>`;
@@ -413,7 +423,8 @@
       case "go-today": await busy("Loading", async () => { S.ui.checkinId = null; await loadDay(denverDate()); go(homeView()); }); return;
       case "go-days": await busy("Loading", async () => { const { data } = await sb.from("checkins").select("id,date,number,tier,is_test,answered_at").order("date", { ascending: false }).order("number").limit(120); S.days = data || []; go("days"); }); return;
       case "open-day": await busy("Loading", async () => { S.ui.checkinId = null; await loadDay(el.dataset.date); go(homeView()); }); return;
-      case "go-settings": go("settings"); return;
+      case "go-settings": S.msg = null; go("settings"); return;
+      case "open-ext": { const ext = extView(el.dataset.view); if (ext) await busy("Loading", async () => { await ext.open(); go(el.dataset.view); }); return; }
       case "go-home": go("home"); return;
       case "go-summary": go("summary"); return;
       case "go-group": go("group"); return;
@@ -635,5 +646,7 @@
       S.err = e.message || String(e); S.view = "home"; render();
     }
   }
+  // What the rules screens (rules.js) use from here.
+  window.PlannerCtx = { sb, fn, esc, busy, go, render, tierBox, S, denverDate };
   start();
 })();
