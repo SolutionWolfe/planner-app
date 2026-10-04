@@ -41,4 +41,4 @@ jobs:
       - name: JavaScript parses
         run: |
           set -e
-          for f in app.js rules.js sw.js config.js; do node --check "$f"; done
+          for f in app.js rules.js home.js sw.js config.js; do node --check "$f"; done

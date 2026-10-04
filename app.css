@@ -179,3 +179,15 @@ code{font-family:var(--mono);font-size:12px}
 .pick .pg{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-top:4px}
 .pick button{font:inherit;font-size:14px;text-align:left;padding:9px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
 .pick button:disabled{opacity:.45;cursor:default}
+
+/* Home */
+.date{padding:2px 4px 12px}
+.date .d{font-size:22px;font-weight:700}
+.date .s{color:var(--muted);font-size:14px;margin-top:2px}
+.ycard .big{font-weight:700;font-size:16px;margin-top:2px}
+.ycard .acts{display:flex;gap:8px;margin-top:10px}
+.ycard .acts button{font:inherit;font-size:14px;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--surface2);color:var(--ink);cursor:pointer;flex:1;min-height:44px}
+.ycard .acts button:disabled{opacity:.45;cursor:default}
+.ycard.closed{opacity:.8}
+.ycard.one{display:block;width:100%;text-align:left;font:inherit;font-size:14px;color:var(--muted);cursor:pointer}
+.cellrow .tmpl{margin-left:0}

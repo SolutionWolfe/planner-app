@@ -134,6 +134,11 @@
     let saved = false;
     for (const e of S.events[plan.id] || []) {
       if (e.group_index == null && e.kind === "done") { saved = true; continue; }
+      if (e.group_index != null && e.exercise_index == null && ["check", "uncheck", "skip"].includes(e.kind)) {
+        const g = groupsOf(plan)[e.group_index];
+        (g ? g.exercises : []).forEach((_, ei) => { st[`${e.group_index}.${ei}`] = e.kind === "check" ? "done" : e.kind === "skip" ? "skip" : ""; });
+        continue;
+      }
       const key = `${e.group_index}.${e.exercise_index}`;
       if (e.kind === "check") st[key] = "done";
       else if (e.kind === "uncheck") st[key] = "";
@@ -189,7 +194,11 @@
     if (ext) ext.bind();
   }
   /** A screen registered by another script file (the rules screens). */
-  function extView(v) { return (window.PlannerViews || {})[v] || null; }
+  function extView(v) {
+    const all = window.PlannerViews || {};
+    if (v === "home" && S.date === denverDate() && all["home-today"]) return all["home-today"]; // today's home screen (home.js)
+    return all[v] || null;
+  }
 
   function tierBox(cls, title, why) {
     return `<div class="tier ${cls}"><div class="t">${esc(title)}</div><div class="why">${esc(why)}</div></div>`;
@@ -367,7 +376,12 @@
   }
 
   // ---------- actions ----------
-  function go(view) { S.view = view; S.ui.view = view; S.ui.checkinId = S.cur ? S.cur.id : null; S.ui.g = S.g; S.ui.e = S.e; saveUI(); render(); }
+  function go(view) {
+    S.view = view; S.ui.view = view; S.ui.checkinId = S.cur ? S.cur.id : null; S.ui.g = S.g; S.ui.e = S.e; saveUI();
+    const ext = extView(view);
+    if (ext && ext.enter) ext.enter();
+    render();
+  }
 
   function bind() {
     on("[data-act]", "click", async (ev) => {
@@ -420,7 +434,7 @@
         return;
       }
       case "sign-out": await sb.auth.signOut(); S.ui = {}; saveUI(); return;
-      case "go-today": await busy("Loading", async () => { S.ui.checkinId = null; await loadDay(denverDate()); go(homeView()); }); return;
+      case "go-today": await busy("Loading", async () => { S.ui.checkinId = null; await loadDay(denverDate()); go("home"); }); return;
       case "go-days": await busy("Loading", async () => { const { data } = await sb.from("checkins").select("id,date,number,tier,is_test,answered_at").order("date", { ascending: false }).order("number").limit(120); S.days = data || []; go("days"); }); return;
       case "open-day": await busy("Loading", async () => { S.ui.checkinId = null; await loadDay(el.dataset.date); go(homeView()); }); return;
       case "go-settings": S.msg = null; go("settings"); return;
@@ -639,14 +653,14 @@
       const params = new URLSearchParams(location.search);
       const wanted = params.get("checkin");
       if (wanted) { history.replaceState(null, "", location.pathname); if (!(await loadCheckinById(wanted))) await loadDay(denverDate()); }
-      else await loadDay(S.ui.checkinId ? (S.ui.date || denverDate()) : denverDate());
+      else { S.ui.checkinId = null; await loadDay(denverDate()); }
       S.ui.date = S.date;
-      go(homeView());
+      go(wanted ? homeView() : "home");
     } catch (e) {
       S.err = e.message || String(e); S.view = "home"; render();
     }
   }
   // What the rules screens (rules.js) use from here.
-  window.PlannerCtx = { sb, fn, esc, busy, go, render, tierBox, S, denverDate };
+  window.PlannerCtx = { sb, fn, esc, busy, go, render, tierBox, S, denverDate, niceDate, loadDay };
   start();
 })();
