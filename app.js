@@ -5,6 +5,15 @@
   const TZ = "America/Denver";
   const FEELS = [["good", "Good"], ["okay", "Okay"], ["rough", "Rough"], ["pain", "Pain somewhere"]];
 
+  // Back from the Connect step: the address carries two values. They are taken out of the address
+  // at once, before anything else reads it, and handed over after sign-in.
+  let returned = (function () {
+    const p = new URLSearchParams(location.search);
+    if (!p.get("state") || !(p.get("code") || p.get("error"))) return null;
+    history.replaceState(null, "", location.pathname);
+    return { code: p.get("code"), state: p.get("state"), error: p.get("error"), scope: p.get("scope") };
+  })();
+
   const sb = window.supabase.createClient(C.supabaseUrl, C.anonKey, {
     auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: "implicit" },
   });
@@ -360,6 +369,7 @@
     return `${tierBox("plain", "Settings", "Signed in on this device.")}
       <div class="stack">
         <div class="tier plain"><div class="t">Notifications</div><div class="why">${standalone ? "Home-screen app: good." : "Open the app from its home-screen icon to allow notifications (Share, Add to Home Screen)."} Permission: ${esc(perm)}.${canPush ? "" : " Push is not available in this browser."}</div></div>
+        <button class="btn" data-act="open-ext" data-view="conn">Oura</button>
         <button class="btn accent" data-act="enable-push" ${canPush && !S.busy ? "" : "disabled"}>Allow notifications on this device</button>
         <button class="btn" data-act="disable-push" ${canPush && !S.busy ? "" : "disabled"}>Turn off notifications on this device</button>
         <button class="btn" data-act="start-test">Start a test check-in</button>
@@ -637,6 +647,8 @@
   // ---------- start ----------
   async function start() {
     if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+    // The other script files register their screens as they load; wait until all of them have.
+    if (document.readyState === "loading") await new Promise((r) => document.addEventListener("DOMContentLoaded", r, { once: true }));
     const { data } = await sb.auth.getSession();
     S.session = data.session;
     sb.auth.onAuthStateChange((_event, session) => {
@@ -650,6 +662,9 @@
   async function boot() {
     S.view = "loading"; render();
     try {
+      const back = returned; returned = null;
+      const conn = back ? extView("conn") : null;
+      if (conn) { S.ui.checkinId = null; await loadDay(denverDate()); S.ui.date = S.date; await conn.finish(back); go("conn"); return; }
       const params = new URLSearchParams(location.search);
       const wanted = params.get("checkin");
       if (wanted) { history.replaceState(null, "", location.pathname); if (!(await loadCheckinById(wanted))) await loadDay(denverDate()); }

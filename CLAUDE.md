@@ -20,7 +20,8 @@ The static web app, served by GitHub Pages. Public means anyone can read and cop
 
 | Thing | Where |
 | --- | --- |
-| Page, styles, logic | `index.html`, `app.css`, `app.js` |
+| Page, styles, logic | `index.html`, `app.css`, `app.js`; screens in `rules.js`, `home.js`, `sets.js`, `connect.js` |
+| Return from Connect | The app's own address with two values in the query; `app.js` takes them out of the address on load and hands them to `connect.js` |
 | Service worker | `sw.js`, scoped to `/planner-app/`; shows every push; caches only the shell |
 | Install | `manifest.webmanifest`, `icon.png` |
 | Public configuration | `config.js` |
