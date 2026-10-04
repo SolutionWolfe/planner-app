@@ -354,12 +354,38 @@
       <div class="foot">${S.date === denverDate() ? `<button class="btn" data-act="start-checkin">Check-in #${next}</button>` : ""}<button class="btn primary" data-act="go-home">Close</button></div>`;
   }
 
+  /** The night's values for a day in the Days list, when there are any. */
+  function dayValuesLine(date) {
+    const v = (S.dayValues || {})[date];
+    if (!v) return "";
+    const parts = [];
+    if (v.readiness !== null) parts.push(`Readiness ${v.readiness}`);
+    if (v.sleep !== null) parts.push(`Sleep ${v.sleep}`);
+    if (v.rest_hr !== null) parts.push(`Rest HR ${v.rest_hr}`);
+    if (v.hrv !== null) parts.push(`HRV ${v.hrv}`);
+    if (v.temp_f !== null) parts.push(`Temp ${v.temp_f > 0 ? "+" : ""}${Number(v.temp_f).toFixed(1)}°F`);
+    return parts.length ? `<div class="muted vals">${esc(parts.join(" · "))}</div>` : "";
+  }
+  async function loadDayValues() {
+    S.dayValues = {};
+    const dates = S.days.map((c) => c.date).sort();
+    if (!dates.length) return;
+    try {
+      const r = await fn("oura-pull", { action: "days", from: dates[0] < addDaysTo(dates[dates.length - 1], -390) ? addDaysTo(dates[dates.length - 1], -390) : dates[0], to: dates[dates.length - 1] });
+      (r.days || []).forEach((d) => { S.dayValues[d.day] = d; });
+    } catch { /* the list still shows without them */ }
+  }
+  function addDaysTo(date, n) {
+    const [y, m, d] = date.split("-").map(Number);
+    return new Date(Date.UTC(y, m - 1, d + n, 12)).toISOString().slice(0, 10);
+  }
+
   function viewDays() {
     const byDate = {};
     S.days.forEach((c) => { (byDate[c.date] = byDate[c.date] || []).push(c); });
     const dates = Object.keys(byDate).sort().reverse();
     return `${tierBox("plain", "Days", "Any past day, from the tables. Tap one to open it; changes there need a reason.")}
-      <ul class="list">${dates.map((d) => `<li data-act="open-day" data-date="${d}"><div class="name">${esc(niceDate(d))}</div><div class="muted">${byDate[d].map((c) => `#${c.number}${c.is_test ? " test" : ""} ${c.tier || (c.answered_at ? "pending" : "unanswered")}`).join(" · ")}</div></li>`).join("") || "<li>No days yet.</li>"}</ul>`;
+      <ul class="list">${dates.map((d) => `<li data-act="open-day" data-date="${d}"><div class="name">${esc(niceDate(d))}</div><div class="muted">${byDate[d].map((c) => `#${c.number}${c.is_test ? " test" : ""} ${c.tier || (c.answered_at ? "pending" : "unanswered")}`).join(" · ")}</div>${dayValuesLine(d)}</li>`).join("") || "<li>No days yet.</li>"}</ul>`;
   }
 
   function viewSettings() {
@@ -445,7 +471,7 @@
       }
       case "sign-out": await sb.auth.signOut(); S.ui = {}; saveUI(); return;
       case "go-today": await busy("Loading", async () => { S.ui.checkinId = null; await loadDay(denverDate()); go("home"); }); return;
-      case "go-days": await busy("Loading", async () => { const { data } = await sb.from("checkins").select("id,date,number,tier,is_test,answered_at").order("date", { ascending: false }).order("number").limit(120); S.days = data || []; go("days"); }); return;
+      case "go-days": await busy("Loading", async () => { const { data } = await sb.from("checkins").select("id,date,number,tier,is_test,answered_at").order("date", { ascending: false }).order("number").limit(120); S.days = data || []; await loadDayValues(); go("days"); }); return;
       case "open-day": await busy("Loading", async () => { S.ui.checkinId = null; await loadDay(el.dataset.date); go(homeView()); }); return;
       case "go-settings": S.msg = null; go("settings"); return;
       case "open-ext": { const ext = extView(el.dataset.view); if (ext) await busy("Loading", async () => { await ext.open(); go(el.dataset.view); }); return; }

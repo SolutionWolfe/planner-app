@@ -19,9 +19,9 @@ That is the whole setup. Notifications and the one-time sign-in work only from t
 - **End workout.** Counts what was done, takes an optional note, and lands on Today's Calendar.
 - **Today's Calendar.** The day's entries in order. Start and done taps are optional.
 - **Check-in #2 and #3.** Any time later, from Today's Calendar.
-- **Days.** Any past day. Changing a saved day asks for a reason.
+- **Days.** Any past day, with the night's readiness, sleep, resting heart rate, HRV and temperature once Oura is connected. Changing a saved day asks for a reason.
 - **Privacy and terms.** Two plain pages, linked from Settings. No form and no script.
-- **Settings.** Oura: connect once (Connect Oura, then Allow on Oura's page), pause and resume, or disconnect. Notifications on or off for this device, a test check-in, sign out. Under Rules: thresholds, the selection grid, the library and the note templates, each change saved with a reason and in force from tomorrow unless you apply it today; History lists every change.
+- **Settings.** Oura: connect once (Connect Oura, then Allow on Oura's page), pause and resume, or disconnect; once connected it shows when it was last read and how much history is in, with Read now and Fetch history. Notifications on or off for this device, a test check-in, sign out. Under Rules: thresholds, the selection grid, the library and the note templates, each change saved with a reason and in force from tomorrow unless you apply it today; History lists every change.
 
 ## What is in here
 
