@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#2F7D6B">
+  <title>Planner privacy policy</title>
+  <link rel="icon" href="icon.png">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <main class="app doc">
+    <p class="muted"><a href="./">‹ Back to Planner</a> · <a href="terms.html">Terms of use</a></p>
+    <h1>Planner privacy policy</h1>
+    <p class="muted">Last updated: 4 October 2026</p>
+
+    <p><b>What Planner is.</b> Planner is a private, single-user workout planning app run by its operator for personal use. It is not offered to the public, and there is no way to sign up. This page exists because Planner connects to an Oura account and explains how that data is handled. This page explains what it collects, what it does with it, how long it keeps it, and how you can see, change or delete it.</p>
+
+    <p><b>What is collected from your Oura account.</b> When you connect your Oura account, Planner reads, with your permission, the following through Oura's official interface: daily readiness, sleep and activity summaries; sleep periods; heart-rate readings; workouts and sessions; tags you add in the Oura app; daily blood-oxygen and stress summaries; ring configuration; and heart-health estimates. You can see the exact list on Oura's permission screen when you connect, and you can disconnect at any time.</p>
+
+    <p><b>What Planner records itself.</b> Your answers to the daily check-in (when your day starts, how you feel, anything unusual you note), the plan it makes for you, what you mark as started, done, skipped or changed, and your notes and reasons for changes.</p>
+
+    <p><b>What it is used for.</b> To build each day's plan, to compare today with your own recent history, to show you your past days, and to let you look at trends in your own data over time. Nothing is used for advertising, sold, or shared with anyone.</p>
+
+    <p><b>Who else sees it.</b> No one. Planner stores your data with a cloud database provider under the operator's account, encrypted in transit and at rest. No artificial-intelligence service receives any of your Oura data or your check-in data. The operator does not share data with third parties, and the app does not use analytics or advertising trackers.</p>
+
+    <p><b>How long it is kept.</b> For as long as your Oura account is connected to Planner, so that your history and trends stay complete. Raw responses from Oura are not stored; only the individual values are.</p>
+
+    <p><b>Disconnecting and deleting.</b> You can pause Planner's access at any time (Settings, Pause Oura) and nothing more is read until you resume. You can disconnect (Settings, Disconnect Oura, or by removing Planner in the Oura app). When you disconnect, Planner stops reading your Oura data immediately and the operator deletes the Oura-sourced data within 72 hours. Your own check-in and workout records are yours and stay unless you ask for them to be deleted too.</p>
+
+    <p><b>Your rights.</b> You can ask to see the data Planner holds about you, correct it, or have it deleted, at any time and without any penalty. Use the form below; requests are acted on within 30 days.</p>
+
+    <p><b>Who is responsible.</b> The operator of Planner is the independent controller of the data described here and is not acting on behalf of Oura. Oura's own handling of your data is described in Oura's privacy policy. Planner is not affiliated with or endorsed by Oura.</p>
+
+    <p><b>Changes.</b> If this policy changes, the date above changes and the new version is shown here.</p>
+
+    <h2 id="requests">Data requests</h2>
+    <p>To see, correct or delete your data, send a message here. Say what you would like and, if you want a reply, how to reach you. Messages are read regularly.</p>
+
+    <form id="request">
+      <label class="fld"><span>What you are asking for</span>
+        <select id="r-type" required>
+          <option value="">Choose one</option>
+          <option value="see">See the data held about me</option>
+          <option value="correct">Correct something</option>
+          <option value="delete">Delete my data</option>
+          <option value="disconnect">Disconnect my Oura account</option>
+          <option value="other">Something else</option>
+        </select></label>
+      <label class="fld"><span>Details</span>
+        <textarea id="r-message" required maxlength="500" rows="5"></textarea>
+        <small>Up to 500 characters. For a correction, say what is wrong and what it should be.</small></label>
+      <label class="fld"><span>How to reach you for the reply (optional)</span>
+        <input type="text" id="r-contact" maxlength="100" autocomplete="off">
+        <small>A reply is only possible if this is filled in.</small></label>
+      <div class="hp" aria-hidden="true"><label>Website <input type="text" id="r-website" tabindex="-1" autocomplete="off"></label></div>
+      <button class="btn primary" type="submit">Send</button>
+    </form>
+    <p class="ok" id="thanks" hidden>Thank you. Your request has been received.</p>
+    <p class="muted">Requests are acted on within 30 days, and deletion of Oura data within 72 hours, as the policy above says.</p>
+  </main>
+  <script src="config.js"></script>
+  <script src="privacy.js"></script>
+</body>
+</html>

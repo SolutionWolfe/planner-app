@@ -370,6 +370,7 @@
         <button class="btn" data-act="open-ext" data-view="rules-tpl">Note templates</button>
         <button class="btn" data-act="open-ext" data-view="rules-hist">History</button>
         <button class="btn" data-act="sign-out">Sign out</button>
+        <p class="muted links"><a href="privacy.html">Privacy policy</a> · <a href="terms.html">Terms of use</a></p>
         <p class="muted">Everything you see is read live; nothing is stored on the phone beyond your sign-in and where you left off.</p>
       </div>`;
   }
