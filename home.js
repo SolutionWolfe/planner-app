@@ -8,7 +8,7 @@
   const { sb, fn, esc, busy, go, render, tierBox, S } = X;
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
-  const H = { today: null, days: [], loaded: false, loading: false, open: false, sheet: false };
+  const H = { today: null, days: [], loaded: false, loading: false, open: false, sheet: false, swept: null };
 
   // ---------- data ----------
   const longDate = (date) => {
@@ -34,9 +34,10 @@
       H.today = X.denverDate();
       await read();
       const past = H.days.filter((d) => d.date < H.today && d.plans > 0);
-      if (past.slice(1).some((d) => d.blocks_open > 0)) {
-        await fn("day-close", { sweep: true });
-        await read();
+      if (H.swept !== H.today && past.slice(1).some((d) => d.blocks_open > 0)) {
+        H.swept = H.today; // asked once a day; the backend decides which days it may close
+        const r = await fn("day-close", { sweep: true });
+        if (r.closed && r.closed.length) await read();
       }
       H.loaded = true;
     } catch (e) {
