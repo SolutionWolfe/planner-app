@@ -23,44 +23,18 @@
 
     <p><b>What it is used for.</b> To build each day's plan, to compare today with your own recent history, to show you your past days, and to let you look at trends in your own data over time. Nothing is used for advertising, sold, or shared with anyone.</p>
 
-    <p><b>Who else sees it.</b> No one. Planner stores your data with a cloud database provider under the operator's account, encrypted in transit and at rest. No artificial-intelligence service receives any of your Oura data or your check-in data. The operator does not share data with third parties, and the app does not use analytics or advertising trackers.</p>
+    <p><b>Who else sees it.</b> No one. Planner stores your data with a cloud database provider under the operator's account, encrypted in transit and at rest. During the current transition, an artificial-intelligence service receives the screenshot and check-in answers you provide each morning, to produce the day's plan; it receives nothing read from your Oura account, and nothing is kept by that service. This will end, and this sentence will be removed, when the transition completes. The operator does not share data with third parties, and the app does not use analytics or advertising trackers.</p>
 
     <p><b>How long it is kept.</b> For as long as your Oura account is connected to Planner, so that your history and trends stay complete. Raw responses from Oura are not stored; only the individual values are.</p>
 
     <p><b>Disconnecting and deleting.</b> You can pause Planner's access at any time (Settings, Pause Oura) and nothing more is read until you resume. You can disconnect (Settings, Disconnect Oura, or by removing Planner in the Oura app). When you disconnect, Planner stops reading your Oura data immediately and the operator deletes the Oura-sourced data within 72 hours. Your own check-in and workout records are yours and stay unless you ask for them to be deleted too.</p>
 
-    <p><b>Your rights.</b> You can ask to see the data Planner holds about you, correct it, or have it deleted, at any time and without any penalty. Use the form below; requests are acted on within 30 days.</p>
+    <p><b>Your rights.</b> You can see, correct or delete the data Planner holds about you at any time and without any penalty. Planner has one account, the operator's, and the operator reaches that data directly in the app and in the database behind it, so no request has to be made to anyone. If you are reading this and are not the operator, contact the person who gave you access to the app; they will act on a request within 30 days.</p>
 
     <p><b>Who is responsible.</b> The operator of Planner is the independent controller of the data described here and is not acting on behalf of Oura. Oura's own handling of your data is described in Oura's privacy policy. Planner is not affiliated with or endorsed by Oura.</p>
 
     <p><b>Changes.</b> If this policy changes, the date above changes and the new version is shown here.</p>
 
-    <h2 id="requests">Data requests</h2>
-    <p>To see, correct or delete your data, send a message here. Say what you would like and, if you want a reply, how to reach you. Messages are read regularly.</p>
-
-    <form id="request">
-      <label class="fld"><span>What you are asking for</span>
-        <select id="r-type" required>
-          <option value="">Choose one</option>
-          <option value="see">See the data held about me</option>
-          <option value="correct">Correct something</option>
-          <option value="delete">Delete my data</option>
-          <option value="disconnect">Disconnect my Oura account</option>
-          <option value="other">Something else</option>
-        </select></label>
-      <label class="fld"><span>Details</span>
-        <textarea id="r-message" required maxlength="500" rows="5"></textarea>
-        <small>Up to 500 characters. For a correction, say what is wrong and what it should be.</small></label>
-      <label class="fld"><span>How to reach you for the reply (optional)</span>
-        <input type="text" id="r-contact" maxlength="100" autocomplete="off">
-        <small>A reply is only possible if this is filled in.</small></label>
-      <div class="hp" aria-hidden="true"><label>Website <input type="text" id="r-website" tabindex="-1" autocomplete="off"></label></div>
-      <button class="btn primary" type="submit">Send</button>
-    </form>
-    <p class="ok" id="thanks" hidden>Thank you. Your request has been received.</p>
-    <p class="muted">Requests are acted on within 30 days, and deletion of Oura data within 72 hours, as the policy above says.</p>
   </main>
-  <script src="config.js"></script>
-  <script src="privacy.js"></script>
 </body>
 </html>
