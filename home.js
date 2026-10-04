@@ -60,7 +60,7 @@
     if (!y) return "";
     const isYesterday = y.date === dayBefore(H.today);
     const label = isYesterday ? `Yesterday, ${weekday(y.date)}` : `Last plan, ${X.niceDate(y.date)}`;
-    const done = names(y.blocks, "done"), open = names(y.blocks, "open"), skipped = names(y.blocks, "skip");
+    const done = names(y.blocks, "done"), open = names(y.blocks, "open"), skipped = names(y.blocks, "skip"); // a replaced block is none of these
     const closed = open.length === 0;
     if (collapsed && !H.open) {
       return `<button class="card ycard one" data-h="card-toggle">${esc(label)}: ${esc(planWords(y))}, ${done.length} of ${y.blocks_total} blocks done${closed ? "" : `, ${open.length} still open`}</button>`;
@@ -85,37 +85,43 @@
   }
 
   // ---------- the four states ----------
+  /** What the last check-in of the day still needs, if anything: its answers, one question, or its plan. */
+  function unfinished(t) {
+    if (!t.last_answered) return `<button class="btn primary big" data-act="open-checkin" data-id="${t.last_checkin_id}">Continue check-in #${t.last_checkin_number}</button>`;
+    if (t.last_checkin_id === t.plan_checkin_id) return "";
+    const ask = (S.pending || []).find((f) => f.checkin_id === t.last_checkin_id);
+    return ask
+      ? `<button class="btn primary big" data-h="followup" data-id="${ask.id}">Answer one question</button>`
+      : `<button class="btn primary big" data-act="resume-plan" data-id="${t.last_checkin_id}">Get my plan</button>`;
+  }
   function view() {
     if (!H.loaded) return tierBox("plain", "Planner", "Loading.");
     const t = todayRow();
     const state = !t ? "new" : t.state;
-    const pendingFollowup = S.pending && S.pending.length ? S.pending[0] : null;
-    const sub = { new: "Nothing started yet today", checkin_open: `Check-in #${t ? t.first_checkin_number : 1} is open`, pending: "Answered, plan pending", in_progress: t ? `Plan in progress, ${t.blocks_done + t.blocks_skipped} of ${t.blocks_total} blocks done` : "", done: "Done for today" }[state];
+    const sub = { new: "Nothing started yet today", checkin_open: `Check-in #${t ? t.last_checkin_number : 1} is open`, pending: "Answered, plan pending", in_progress: t ? `Plan in progress, ${t.blocks_done + t.blocks_skipped} of ${t.blocks_total} blocks done` : "", done: "Done for today" }[state];
     let body = "", foot = "";
 
     if (state === "new") {
       foot = `<button class="btn primary big" data-h="start">Start today</button>`;
-    } else if (state === "checkin_open") {
-      foot = `<button class="btn primary big" data-act="open-checkin" data-id="${t.first_checkin_id}">Continue check-in #${t.first_checkin_number}</button>`;
-    } else if (state === "pending") {
-      foot = pendingFollowup
-        ? `<button class="btn primary big" data-h="followup">Answer one question</button>`
-        : `<button class="btn primary big" data-act="resume-plan" data-id="${t.first_checkin_id}">Get my plan</button>`;
+    } else if (state === "checkin_open" || state === "pending") {
+      foot = unfinished(t);
     } else {
-      const next = t.blocks.find((b) => b.status === "open");
+      // The newest plan is the day's plan; what an earlier plan left unfinished is not listed.
+      const blocks = t.blocks.filter((b) => b.status !== "replaced");
+      const next = blocks.find((b) => b.status === "open");
+      const waiting = unfinished(t);
       if (state === "in_progress") {
         body = `${tierBox(t.tier || "plain", t.tier_line || "Today's plan", `${t.window_minutes != null ? `Window ${t.window_minutes} minutes. ` : ""}Next up: ${next ? next.name : "nothing"}.`)}
           ${t.note ? `<p class="muted" style="margin:0 6px 8px">${esc(t.note)}</p>` : ""}
-          <ul class="rows">${t.blocks.map((b) => `<li class="row ${b.status === "done" ? "done" : ""} ${b.status === "skip" ? "skip" : ""} ${next && b === next ? "cur" : ""}" data-h="block" data-c="${b.checkin_id}" data-g="${b.group_index}">
-            <div class="ring ${b.status === "done" ? "full" : ""}">${b.status === "done" ? "✓" : b.status === "skip" ? "–" : `${b.done + b.skipped}/${b.exercises}`}</div><div><div class="name">${esc(b.name)}</div><div class="short">${b.status === "open" ? "open" : b.status === "skip" ? "skipped" : "done"}</div></div><div class="min">${b.minutes ?? ""}</div></li>`).join("")}</ul>`;
+          <ul class="rows">${blocks.map((b) => `<li class="row ${b.status === "done" ? "done" : ""} ${b.status === "skip" ? "skip" : ""} ${next && b === next ? "cur" : ""}" data-h="block" data-c="${b.checkin_id}" data-g="${b.group_index}">
+            <div class="ring ${b.status === "done" ? "full" : ""}">${b.status === "done" ? "✓" : b.status === "skip" ? "–" : `${b.done + b.skipped}/${b.exercises}`}</div><div><div class="name">${esc(b.name)}</div><div class="short">${b.status === "open" ? "open" : b.status === "skip" ? "skipped" : "done"}${b.checkin_number !== t.plan_checkin_number ? " · earlier plan" : ""}</div></div><div class="min">${b.minutes ?? ""}</div></li>`).join("")}</ul>`;
       } else {
-        const skipped = names(t.blocks, "skip");
-        body = tierBox("green", "Done for today", t.blocks_total ? `${t.total_minutes} minutes planned, ${t.minutes_done} done${skipped.length ? `, ${skipped.join(", ")} skipped` : ""}.` : "Nothing planned today.");
+        const skipped = names(blocks, "skip");
+        body = tierBox("green", "Done for today", blocks.length ? `${t.total_minutes} minutes planned, ${t.minutes_done} done${skipped.length ? `, ${skipped.join(", ")} skipped` : ""}.` : "Nothing planned today.");
       }
-      const nextNumber = (S.checkins.length ? S.checkins[S.checkins.length - 1].number : t.checkins) + 1;
-      foot = `<button class="btn ${state === "in_progress" ? "primary" : ""}" data-act="open-plan" data-id="${t.blocks.length ? t.blocks[0].checkin_id : t.first_checkin_id}">Open today's plan</button>
-        ${S.calendar && S.calendar.length ? `<button class="btn quiet" data-act="go-calendar">Today's Calendar</button>` : ""}
-        <button class="btn quiet" data-act="start-checkin">Check-in #${nextNumber}</button>`;
+      foot = `${waiting}<button class="btn ${state === "in_progress" && !waiting ? "primary" : ""}" data-act="open-plan" data-id="${t.plan_checkin_id}">Open today's plan</button>
+        ${waiting ? "" : `<button class="btn" data-act="start-checkin">Check in again</button>`}
+        ${S.calendar && S.calendar.length ? `<button class="btn quiet" data-act="go-calendar">Today's Calendar</button>` : ""}`;
     }
     const collapsed = state === "in_progress" || state === "done";
     return `<div class="date"><div class="d">${esc(longDate(H.today))}</div><div class="s">${esc(sub)}</div></div>
@@ -144,7 +150,7 @@
       if (!y) return;
       await busy("Loading", async () => {
         await X.loadDay(y.date);
-        S.cur = S.checkins.find((c) => y.blocks.length && c.id === y.blocks[0].checkin_id) || S.checkins.find((c) => !c.is_test) || S.cur;
+        S.cur = S.checkins.find((c) => c.id === y.plan_checkin_id) || S.checkins.find((c) => !c.is_test) || S.cur;
         S.g = 0; S.e = 0; S.msg = null;
         go("summary");
       });
@@ -160,7 +166,11 @@
         go(S.cur.answered_at ? "home" : "checkin");
       });
     },
-    "followup": () => { S.followup = S.pending[0]; S.cur = S.checkins.find((c) => c.id === S.followup.checkin_id) || S.cur; go("followup"); },
+    "followup": (el) => {
+      S.followup = S.pending.find((f) => f.id === el.dataset.id) || S.pending[0];
+      S.cur = S.checkins.find((c) => c.id === S.followup.checkin_id) || S.cur;
+      go("followup");
+    },
     "block": (el) => {
       const c = S.checkins.find((x) => x.id === el.dataset.c);
       if (!c) return;
