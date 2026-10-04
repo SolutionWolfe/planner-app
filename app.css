@@ -211,3 +211,16 @@ code{font-family:var(--mono);font-size:12px}
 .set .f input{width:50px}
 .set .f select{width:auto;text-align:left;padding-inline:4px;font-size:14px}
 .mmss input{width:70px}
+
+/* Privacy and terms pages */
+.doc h1{font-size:24px;margin:6px 0 4px}
+.doc h2{font-size:18px;margin:22px 0 8px}
+.doc p{margin:0 0 12px;font-size:15px;line-height:1.55}
+.doc a{color:var(--accent)}
+.doc form{display:flex;flex-direction:column;gap:12px;margin:0 0 12px}
+.doc .fld small{font-size:12px;color:var(--muted);text-transform:none;letter-spacing:0}
+.doc .fld textarea{font:inherit;font-size:16px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);width:100%;resize:vertical}
+.doc [hidden]{display:none}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.links{text-align:center;margin-top:6px}
+.links a{color:var(--muted)}
