@@ -167,12 +167,17 @@
   }
   function sheetExercise() {
     const d = R.sheet.draft;
+    if (R.sheet.retire) {
+      return `<div class="h2">Retire ${esc(d.name)}</div>
+        <p class="muted">It leaves every plan from the day you choose. Nothing is deleted: it stays in the library, greyed out, and can be restored.</p>
+        ${reasonBox()}<div class="acts"><button class="btn sm" data-r="ex-retire-back">Go back</button><button class="btn sm" data-r="ex-retire" data-when="today">Retire today</button><button class="btn sm dark" data-r="ex-retire" data-when="tomorrow">Retire from tomorrow</button></div>`;
+    }
     if (R.sheet.prep) {
       return `<div class="h2">${R.sheet.key ? esc(d.name) : "New prep entry"}</div>
         <label class="fld"><span>Title</span><input type="text" id="e-name" value="${esc(d.name)}" maxlength="80" placeholder="e.g. Coffee"></label>
         <label class="fld"><span>Minutes</span><input type="number" id="e-min" inputmode="numeric" min="1" value="${Math.round((d.seconds || 600) / 60)}"></label>
         <p class="muted">Prep is a title and minutes; no sets, reps or load.</p>${reasonBox()}
-        <div class="acts"><button class="btn sm" data-r="sheet-close">Cancel</button>${R.sheet.key ? '<button class="btn sm" data-r="ex-retire">Retire</button>' : ""}<button class="btn sm" data-r="ex-save" data-when="today">Save for today</button><button class="btn sm dark" data-r="ex-save" data-when="tomorrow">Save from tomorrow</button></div>`;
+        <div class="acts"><button class="btn sm" data-r="sheet-close">Cancel</button>${R.sheet.key ? '<button class="btn sm" data-r="ex-retire-ask">Retire</button>' : ""}<button class="btn sm" data-r="ex-save" data-when="today">Save for today</button><button class="btn sm dark" data-r="ex-save" data-when="tomorrow">Save from tomorrow</button></div>`;
     }
     return `<div class="h2">${R.sheet.key ? esc(d.name) : "New exercise or activity"}</div>
       <label class="fld"><span>Name</span><input type="text" id="e-name" value="${esc(d.name)}" maxlength="80" placeholder="e.g. Walk, Clamshells"></label>
@@ -185,7 +190,7 @@
         <label class="fld"><span>Band</span><select id="e-band"><option value="">no band</option>${R.bands.map((b) => `<option value="${esc(b.name)}"${d.band === b.name ? " selected" : ""}>${esc(b.name)}</option>`).join("")}</select></label></div>
       <div class="fld"><span>Groups (one or more)</span><div class="gchips">${liveGroups().filter((g) => g.key !== "prep").map((g) => `<button data-r="ex-group" data-v="${esc(g.key)}" aria-pressed="${d.groups.includes(g.key)}">${esc(g.name)}</button>`).join("")}</div></div>
       ${reasonBox()}
-      <div class="acts"><button class="btn sm" data-r="sheet-close">Cancel</button>${R.sheet.key ? '<button class="btn sm" data-r="ex-retire">Retire</button>' : ""}<button class="btn sm" data-r="ex-save" data-when="today">Save for today</button><button class="btn sm dark" data-r="ex-save" data-when="tomorrow">Save from tomorrow</button></div>`;
+      <div class="acts"><button class="btn sm" data-r="sheet-close">Cancel</button>${R.sheet.key ? '<button class="btn sm" data-r="ex-retire-ask">Retire</button>' : ""}<button class="btn sm" data-r="ex-save" data-when="today">Save for today</button><button class="btn sm dark" data-r="ex-save" data-when="tomorrow">Save from tomorrow</button></div>`;
   }
   /** Keeps what was typed into the open exercise sheet before a re-render. */
   function readExercise() {
@@ -211,7 +216,7 @@
         <div class="line"><b>${exs.length} exercise${exs.length === 1 ? "" : "s"}:</b> ${exs.map((e) => esc(e.name)).join(", ") || "none"}${shared.length ? ` (${shared.length} also in another group; those stay there)` : ""}</div>
         <div class="line"><b>${cells.length} grid cell${cells.length === 1 ? "" : "s"}:</b> ${cells.map(esc).join("; ") || "none"}${cells.length ? " (its blocks are removed from these cells)" : ""}</div>
         <div class="line"><b>Past records:</b> kept, still labelled ${esc(g.name)}. Nothing is deleted.</div></div>
-        ${reasonBox()}<div class="acts"><button class="btn sm" data-r="group-back">Go back</button><button class="btn sm dark" data-r="group-remove" data-when="today">Remove ${esc(g.name)}</button></div>`;
+        ${reasonBox()}<div class="acts"><button class="btn sm" data-r="group-back">Go back</button><button class="btn sm" data-r="group-remove" data-when="today">Remove today</button><button class="btn sm dark" data-r="group-remove" data-when="tomorrow">Remove from tomorrow</button></div>`;
     }
     return `<div class="h2">${s.key ? esc(group(s.key).name) : "New group"}</div>
       <label class="fld"><span>Group name</span><input type="text" id="g-name" value="${esc(s.name || "")}" maxlength="60" placeholder="e.g. Swimming, Climbing"></label>
@@ -222,9 +227,13 @@
     return `<div class="h2">Bands</div><label class="fld"><span>Band strengths, lightest first, comma separated</span><input type="text" id="b-list" value="${esc(R.sheet.list ?? R.bands.map((b) => b.name).join(", "))}"></label>
       <p class="muted">Offered as the load on every set, next to weight in lb. Sets already recorded keep the name they were saved with.</p>${reasonBox()}${saveRow("bands-save")}`;
   }
+  /** A change with no fields of its own (restore, reorder): the reason and the day. */
+  function sheetConfirm() {
+    return `<div class="h2">${esc(R.sheet.title)}</div><p class="muted">${esc(R.sheet.text)}</p>${reasonBox()}${saveRow("confirm-save")}`;
+  }
   function sheet() {
     if (!R.sheet) return "";
-    const body = { cell: sheetCell, exercise: sheetExercise, group: sheetGroup, bands: sheetBands }[R.sheet.kind]();
+    const body = { cell: sheetCell, exercise: sheetExercise, group: sheetGroup, bands: sheetBands, confirm: sheetConfirm }[R.sheet.kind]();
     return `<div class="sheetbg" data-r="sheet-close"></div><div class="sheet on" role="dialog" aria-modal="true">${S.err ? `<div class="err">${esc(S.err)}</div>` : ""}${body}</div>`;
   }
 
@@ -258,14 +267,6 @@
     const e = key ? R.exercises.find((x) => x.key === key) : null;
     const bk = e ? e.block_key : blockKey;
     return { kind: "exercise", key: key || null, block: bk, prep: bk === "prep", draft: e ? { name: e.name, cues: e.cues || "", mode: e.mode, sets: e.sets, reps: e.reps, seconds: e.seconds, load_lb: e.load_lb, band: e.band, groups: groupsOf(e.key) } : { name: "", cues: "", mode: bk === "prep" ? "prep" : "reps", sets: 1, reps: bk === "prep" ? null : 10, seconds: bk === "prep" ? 600 : 60, load_lb: 0, band: null, groups: [(R.blocks.find((b) => b.key === bk) || {}).group_key] } };
-  }
-
-  /** A change with no fields of its own: asks for the reason, then saves from tomorrow. */
-  async function quick(label, calls, done) {
-    const why = (window.prompt(label + " (required)", "") || "").trim();
-    if (!why) return;
-    S.msg = null;
-    await busy("Saving", async () => { for (const body of calls) await fn("rules-update", { ...body, reason: why, apply: "tomorrow" }); await load(); S.msg = `${done} Takes effect tomorrow.`; });
   }
 
   const actions = {
@@ -308,12 +309,17 @@
         : { key: s.key || undefined, block_key: s.block, name: d.name, mode: d.mode, sets: d.sets, reps: d.reps, seconds: d.mode === "time" ? Math.max(1, d.seconds || 0) : null, load_lb: d.load_lb, band: d.band, cues: d.cues, groups: d.groups };
       await save([{ op: "exercise", exercise }], el.dataset.when, `${d.name.trim()} saved.`);
     },
-    "ex-retire": async () => { await save([{ op: "exercise_retire", key: R.sheet.key }], "tomorrow", "Retired; restore it any time."); },
-    "ex-restore": (el) => quick("Reason for restoring", [{ op: "exercise_restore", key: el.dataset.k }], "Restored."),
+    "ex-retire-ask": () => { readExercise(); R.sheet.retire = true; render(); },
+    "ex-retire-back": () => { R.sheet.retire = false; render(); },
+    "ex-retire": async (el) => { await save([{ op: "exercise_retire", key: R.sheet.key }], el.dataset.when, "Retired; restore it any time."); },
+    "ex-restore": (el) => {
+      const e = R.exercises.find((x) => x.key === el.dataset.k);
+      sheetOpen({ kind: "confirm", title: `Restore ${e.name}`, text: "It goes back into its block from the day you choose.", calls: [{ op: "exercise_restore", key: e.key }], done: "Restored." });
+    },
     "ex-up": (el) => {
       const e = R.exercises.find((x) => x.key === el.dataset.k), list = exOf(e.block_key).map((x) => x.key), i = list.indexOf(e.key);
       [list[i - 1], list[i]] = [list[i], list[i - 1]];
-      quick("Reason for the new order", [{ op: "exercise_order", block_key: e.block_key, keys: list }], "Order saved.");
+      sheetOpen({ kind: "confirm", title: `Move ${e.name} up`, text: "The new order is used from the day you choose.", calls: [{ op: "exercise_order", block_key: e.block_key, keys: list }], done: "Order saved." });
     },
     "group-new": () => sheetOpen({ kind: "group", key: null, name: "" }),
     "group-edit": () => sheetOpen({ kind: "group", key: R.libTab, name: group(R.libTab).name }),
@@ -325,7 +331,8 @@
       R.sheet.name = name;
       await save([R.sheet.key ? { op: "group_rename", key: R.sheet.key, name } : { op: "group_add", name }], el.dataset.when, `${name} saved.`);
     },
-    "group-remove": async () => { await save([{ op: "group_remove", key: R.sheet.key }], "tomorrow", "Group removed; past records keep the label."); },
+    "group-remove": async (el) => { await save([{ op: "group_remove", key: R.sheet.key }], el.dataset.when, "Group removed; past records keep the label."); },
+    "confirm-save": async (el) => { await save(R.sheet.calls, el.dataset.when, R.sheet.done); },
     "bands-edit": () => sheetOpen({ kind: "bands" }),
     "bands-save": async (el) => {
       const names = (($("#b-list") || {}).value || "").split(",").map((x) => x.trim()).filter(Boolean);
