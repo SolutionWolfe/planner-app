@@ -20,6 +20,7 @@ That is the whole setup. Notifications and the one-time sign-in work only from t
 - **Today's Calendar.** The day's entries in order. Start and done taps are optional.
 - **Check-in #2 and #3.** Any time later, from Today's Calendar.
 - **Days.** Any past day: the night's values once Oura is connected, the day's blocks and where each stands, anything added from the library as done that day (on a block or on the day itself) with its sets open to change, and a note. Changing a past day asks for a reason once.
+- **Add a block.** On today's home and on any day in Days: a whole block from the library (listed by training group), or Something else with a name, a group and minutes. On a past day it lands as done, every exercise done with its sets open to change; on today it lands as open, to do now, and counts with the rest of the day. Tap it for its exercises and sets, Done with this block, or Skip the rest with a reason.
 - **Privacy and terms.** Two plain pages, linked from Settings. No form and no script.
 - **Settings.** Oura: connect once (Connect Oura, then Allow on Oura's page), pause and resume, or disconnect; once connected it shows when it was last read and how much history is in, with Read now and Fetch history. Notifications on or off for this device, a test check-in, sign out. Under Rules: thresholds, the selection grid, the library and the note templates, each change saved with a reason and in force from tomorrow unless you apply it today; History lists every change.
 

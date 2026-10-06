@@ -9,7 +9,8 @@
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
   // choice: what the close sheet will record for each open block, keyed by plan and block; verify: the block being checked as done.
-  const H = { today: null, days: [], loaded: false, loading: false, open: false, sheet: false, swept: null, choice: {}, verify: null };
+  // picker: the library's blocks when + Add a block is open (blocks.js).
+  const H = { today: null, days: [], loaded: false, loading: false, open: false, sheet: false, swept: null, choice: {}, verify: null, picker: null };
   const REASON_DONE = "done late, recorded next morning";
   const keyOf = (b) => `${b.plan_id}.${b.group_index}`;
   const dur = (sec) => { sec = Math.round(sec || 0); const m = Math.floor(sec / 60), r = sec % 60; return m && r ? `${m} min ${r} s` : m ? `${m} min` : `${r} s`; };
@@ -129,20 +130,21 @@
       if (state === "in_progress") {
         body = `${tierBox(t.tier || "plain", t.tier_line || "Today's plan", `${t.window_minutes != null ? `Window ${t.window_minutes} minutes. ` : ""}Next up: ${next ? next.name : "nothing"}.`)}
           ${t.note ? `<p class="muted" style="margin:0 6px 8px">${esc(t.note)}</p>` : ""}
-          <ul class="rows">${blocks.map((b) => `<li class="row ${b.status === "done" ? "done" : ""} ${b.status === "skip" ? "skip" : ""} ${next && b === next ? "cur" : ""}" data-h="block" data-c="${b.checkin_id}" data-g="${b.group_index}">
-            <div class="ring ${b.status === "done" ? "full" : ""}">${b.status === "done" ? "✓" : b.status === "skip" ? "–" : `${b.done + b.skipped}/${b.exercises}`}</div><div><div class="name">${esc(b.name)}</div><div class="short">${b.status === "open" ? "open" : b.status === "skip" ? "skipped" : "done"}${b.checkin_number !== t.plan_checkin_number ? " · earlier plan" : ""}</div></div><div class="min">${b.minutes ?? ""}</div></li>`).join("")}</ul>`;
+          <ul class="rows">${blocks.map((b) => `<li class="row ${b.status === "done" ? "done" : ""} ${b.status === "skip" ? "skip" : ""} ${next && b === next ? "cur" : ""}" data-h="block" data-c="${b.checkin_id || ""}" data-g="${b.group_index ?? ""}" data-a="${b.added_id || ""}">
+            <div class="ring ${b.status === "done" ? "full" : ""}">${b.status === "done" ? "✓" : b.status === "skip" ? "–" : `${b.done + b.skipped}/${b.exercises}`}</div><div><div class="name">${esc(b.name)}</div><div class="short">${b.status === "open" ? "open" : b.status === "skip" ? "skipped" : "done"}${b.added_id ? " · added" : b.checkin_number !== t.plan_checkin_number ? " · earlier plan" : ""}</div></div><div class="min">${b.minutes ?? ""}</div></li>`).join("")}</ul>`;
       } else {
         const skipped = names(blocks, "skip");
         body = tierBox("green", "Done for today", blocks.length ? `${t.total_minutes} minutes planned, ${t.minutes_done} done${skipped.length ? `, ${skipped.join(", ")} skipped` : ""}.` : "Nothing planned today.");
       }
       foot = `${waiting}<button class="btn ${state === "in_progress" && !waiting ? "primary" : ""}" data-act="open-plan" data-id="${t.plan_checkin_id}">Open today's plan</button>
         ${waiting ? "" : `<button class="btn" data-act="start-checkin">Check in again</button>`}
+        ${X.blocks ? `<button class="btn" data-h="add-block">+ Add a block</button>` : ""}
         ${S.calendar && S.calendar.length ? `<button class="btn quiet" data-act="go-calendar">Today's Calendar</button>` : ""}`;
     }
     const collapsed = state === "in_progress" || state === "done";
     return `<div class="date"><div class="d">${esc(longDate(H.today))}</div><div class="s">${esc(sub)}</div></div>
       ${card(collapsed)}${body}
-      <div class="foot col">${foot}</div>${sheet()}`;
+      <div class="foot col">${foot}</div>${sheet()}${H.picker && X.blocks ? X.blocks.sheet(H.picker, "data-h", "Add a block to today") : ""}`;
   }
 
   // ---------- events ----------
@@ -176,7 +178,8 @@
         const done = y.blocks.filter((b) => b.status === "open" && H.choice[keyOf(b)] && H.choice[keyOf(b)].action === "done");
         for (const b of done) {
           const planned = b.minutes != null ? Math.round(Number(b.minutes) * 60) : null;
-          await fn("set-event", { plan_id: b.plan_id, group_index: b.group_index, kind: "block_done", reason: REASON_DONE, planned: { seconds: planned }, actual: { seconds: H.choice[keyOf(b)].seconds ?? planned } });
+          const which = b.added_id ? { added_id: b.added_id } : { plan_id: b.plan_id, group_index: b.group_index }; // an added block is done through its own row
+          await fn("set-event", { ...which, kind: "block_done", reason: REASON_DONE, planned: { seconds: planned }, actual: { seconds: H.choice[keyOf(b)].seconds ?? planned } });
         }
         const r = await fn("day-close", { date: y.date });
         H.sheet = false; H.choice = {}; H.verify = null;
@@ -213,24 +216,40 @@
       go("followup");
     },
     "block": (el) => {
+      if (el.dataset.a) { busy("Loading", async () => { await X.blocks.openScreen(el.dataset.a, "home"); }); return; }
       const c = S.checkins.find((x) => x.id === el.dataset.c);
       if (!c) return;
       S.cur = c; S.g = Number(el.dataset.g); S.e = 0;
       go("group");
+    },
+    // + Add a block to today: the library's blocks, or Something else; the block lands open, to do now.
+    "add-block": () => busy("Loading the library", async () => { H.picker = await X.blocks.library(); }),
+    "pick-cancel": () => { H.picker = null; S.err = null; render(); },
+    "pick-block-else": (el) => actions["pick-block"](el),
+    "pick-block": (el) => {
+      const r = X.blocks.chosen(H.picker, el);
+      if (r.error) { S.err = r.error; render(); return; }
+      busy("Adding the block", async () => {
+        const t = todayRow(), plan = t && S.plans ? S.plans[t.plan_checkin_id] : null;
+        await X.blocks.add(H.today, plan ? plan.id : null, r.block);
+        H.picker = null;
+        await read();
+        S.msg = `${r.block.name} added to today.`;
+      });
     },
   };
   function bind() {
     $$("[data-h]").forEach((el) => el.addEventListener("click", (ev) => {
       const a = actions[el.dataset.h];
       if (!a) return;
-      if (el.dataset.h === "close-cancel" && ev.target !== el) return;
+      if ((el.dataset.h === "close-cancel" || el.dataset.h === "pick-cancel") && ev.target !== el) return;
       ev.stopPropagation();
       a(el);
     }));
   }
 
   /** Called whenever the app moves to the home screen: the day is read again, never kept. */
-  function enter() { H.sheet = false; H.open = false; H.choice = {}; H.verify = null; load(); }
+  function enter() { H.sheet = false; H.open = false; H.choice = {}; H.verify = null; H.picker = null; load(); }
 
   // Coming back to the app: the date may have changed, and so may the day.
   document.addEventListener("visibilitychange", async () => {
