@@ -374,7 +374,9 @@
     loadLibrary().catch((e) => { S.err = e.message || String(e); E.lib = E.lib || []; }).finally(() => { if (S.view === "group") render(); });
   }
   // For the Day view: the picker list, the added-exercise card and its bindings (the bands come with the library).
-  X.extras = { library: libraryList, pickList, elseEntry, card: extraCard, bind: bindExtras, doneAs, ready: loadLibrary };
+  X.extras = { library: libraryList, pickList, elseEntry, card: extraCard, bind: bindExtras, doneAs, ready: loadLibrary,
+    // For the added-block screen (blocks.js): the set row and the replay helpers.
+    setRow, clean, fromEvent, has, live, words, dur, bands: () => E.bands, groups: () => E.groups };
 
   window.PlannerViews = Object.assign(window.PlannerViews || {}, { group: { enter, render: view, bind } });
   if (S.view === "group" && S.session) { enter(); render(); }

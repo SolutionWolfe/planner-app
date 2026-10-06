@@ -10,8 +10,10 @@
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
   // extras: what was added from the library that day (on a block or on the day); sets: the changes to their sets; reason: one reason per past day, asked once.
-  const D = { date: null, row: null, values: null, extras: [], sets: [], notes: [], picker: null, loaded: false, reason: null };
+  // added: whole blocks added that day (blocks.js); all: every events row on the day, for their state.
+  const D = { date: null, row: null, values: null, extras: [], sets: [], notes: [], added: [], all: [], picker: null, loaded: false, reason: null };
   const extrasApi = () => X.extras || null;
+  const blocksApi = () => X.blocks || null;
 
   async function load() {
     D.date = S.date;
@@ -26,7 +28,9 @@
     D.row = row.data || null;
     D.values = (days.days || [])[0] || null;
     const rows = ev.data || [];
-    D.extras = rows.filter((e) => e.kind === "exercise_add");
+    D.all = rows;
+    D.added = rows.filter((e) => e.kind === "block_add");
+    D.extras = rows.filter((e) => e.kind === "exercise_add" && !e.is_edit_of);
     D.sets = rows.filter((e) => e.is_edit_of && e.set_index != null);
     D.notes = rows.filter((e) => e.kind === "day_note");
     D.loaded = true;
@@ -47,13 +51,19 @@
     </div>`;
   }
 
+  /** The plan's blocks from day_summary, then the blocks added that day, read from their own rows (so a day with no plan shows them too). */
   function blocks() {
     const r = D.row;
-    if (!r || !r.blocks || !r.blocks.length) return `<p class="muted">No plan that day.</p>`;
-    return `<ul class="rows">${r.blocks.filter((b) => b.status !== "replaced").map((b) => `<li class="row ${b.status === "done" ? "done" : ""} ${b.status === "skip" ? "skip" : ""}" data-d="block" data-c="${esc(b.checkin_id)}" data-g="${b.group_index}">
-      <div class="ring ${b.status === "done" ? "full" : ""}">${b.status === "done" ? "✓" : `${b.done}/${b.exercises}`}</div>
-      <div><div class="name">${esc(b.name)}</div><div class="short">${b.status === "done" ? "done" : b.status === "skip" ? "skipped" : "open"}${b.recorded_seconds ? ` · ${Math.round(b.recorded_seconds / 60)} min` : ""}</div></div>
-      <div class="min">${esc(String(b.minutes || ""))}</div></li>`).join("")}</ul>`;
+    const planned = r && Array.isArray(r.blocks) ? r.blocks.filter((b) => b.status !== "replaced" && b.group_index != null) : [];
+    const api = blocksApi();
+    const added = api ? D.added.map((a) => ({ a, s: api.state(a, D.all) })) : [];
+    if (!planned.length && !added.length) return `<p class="muted">No plan that day.</p>`;
+    const row = (b, attrs, extra) => `<li class="row ${b.status === "done" ? "done" : ""} ${b.status === "skip" ? "skip" : ""}" ${attrs}>
+      <div class="ring ${b.status === "done" ? "full" : ""}">${b.status === "done" ? "✓" : b.status === "skip" ? "–" : `${b.done}/${b.exercises}`}</div>
+      <div><div class="name">${esc(b.name)}</div><div class="short">${b.status === "done" ? "done" : b.status === "skip" ? "skipped" : "open"}${b.recorded_seconds ? ` · ${Math.round(b.recorded_seconds / 60)} min` : ""}${extra}</div></div>
+      <div class="min">${esc(String(b.minutes ?? ""))}</div></li>`;
+    return `<ul class="rows">${planned.map((b) => row(b, `data-d="block" data-c="${esc(b.checkin_id)}" data-g="${b.group_index}"`, "")).join("")}
+      ${added.map(({ a, s }) => { const x = a.added_block || {}; return row({ ...s, name: x.name || "added", minutes: x.minutes }, `data-d="ablock" data-a="${esc(a.id)}"`, ` · added${x.group_key ? ", " + esc(String(x.group_key).replace(/_/g, " ")) : ""}`); }).join("")}</ul>`;
   }
 
   /** What was added from the library that day, each with its sets, editable like any other exercise. */
@@ -73,6 +83,7 @@
       ${blocks()}
       ${extras()}
       <div class="stack">
+        ${blocksApi() ? `<button class="btn" data-d="add-block">+ Add a block</button>` : ""}
         <button class="btn" data-d="add">+ Add something done that day</button>
         <div class="q"><div class="lab">Note for the day</div><textarea class="txt" id="dayNote" rows="2" placeholder="Anything worth remembering about this day">${esc(note)}</textarea>
           <button class="btn" data-d="save-note">Save the note</button></div>
@@ -85,6 +96,7 @@
   function picker() {
     const p = D.picker;
     if (!p) return "";
+    if (p.kind === "block") return blocksApi().sheet(p.lib, "data-d", `Add a block ${past() ? "done that day" : "to today"}`);
     return `<div class="sheetbg" data-d="pick-cancel"></div><div class="sheet on" role="dialog" aria-modal="true"><div class="h2">${esc(p.title)}</div>
       <div class="pick">${extrasApi().pickList(p.lib, "data-d", true)}</div>
       <div class="acts"><button class="btn sm" data-d="pick-cancel">Cancel</button></div></div>`;
@@ -108,6 +120,22 @@
       go("group");
     },
     add: () => { if (!extrasApi()) return; busy("Loading the library", async () => { D.picker = { title: `Add something done ${past() ? "that day" : "today"}`, lib: await extrasApi().library() }; }); },
+    "add-block": () => { if (!blocksApi()) return; busy("Loading the library", async () => { D.picker = { kind: "block", lib: await blocksApi().library() }; }); },
+    "pick-block-else": (el) => actions["pick-block"](el),
+    "pick-block": (el) => {
+      const r = blocksApi().chosen(D.picker.lib, el);
+      if (r.error) { S.err = r.error; render(); return; }
+      const why = reasonFor();
+      if (!why.ok) return;
+      busy("Adding the block", async () => {
+        // Today's add belongs to today's plan when there is one; a past day's add stands on the day.
+        const plan = !past() && D.row && S.plans ? S.plans[D.row.plan_checkin_id] : null;
+        const a = await blocksApi().add(D.date, plan ? plan.id : null, r.block, why.reason);
+        D.added.push(a); D.all.push(a); D.picker = null;
+        S.msg = `${r.block.name} added${past() ? " as done" : ""}. Tap it to change its sets.`;
+      });
+    },
+    ablock: (el) => busy("Loading", async () => { await blocksApi().openScreen(el.dataset.a, "day"); }),
     "pick-cancel": () => { D.picker = null; render(); },
     "pick-else": (el) => actions.pick(el),
     pick: (el) => {

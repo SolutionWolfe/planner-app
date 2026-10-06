@@ -314,7 +314,7 @@
       <ul class="rows">${g.exercises.map((e, ei) => { const s = p.st[`${gi}.${ei}`] || ""; return `<li class="row ${s === "done" ? "done" : ""} ${s === "skip" ? "skip" : ""} ${S.e === ei ? "cur" : ""}" data-act="open-exercise" data-e="${ei}">
         <input class="box" type="checkbox" aria-label="Mark ${esc(e.name)} done" data-act="toggle" data-e="${ei}" ${s === "done" ? "checked" : ""}><div><div class="name">${esc(e.name)}</div><div class="short">${esc(e.prescription)}</div></div><div class="min">${e.minutes}</div></li>`; }).join("")}
       ${(p.extras[gi] || []).map((x) => `<li class="row done extra"><input class="box" type="checkbox" checked disabled><div><div class="name">${esc((x.added_exercise && x.added_exercise.name) || "added")}</div><div class="short">added by you ${esc(denverTime(x.at))}</div></div><div class="min">+</div></li>`).join("")}</ul>
-      <div class="foot"><button class="btn" data-act="add-exercise">+ add to this group</button><button class="btn primary" data-act="group-done">All done</button></div>`;
+      <div class="foot"><button class="btn primary" data-act="group-done">All done</button></div>`;
   }
 
   function viewExercise() {
@@ -531,17 +531,7 @@
         await busy(null, async () => { await tap(plan, S.g, ei, cur === "done" ? "uncheck" : "check", e.name); });
         return;
       }
-      case "add-exercise": {
-        const name = window.prompt("What did you add to this group?", "");
-        if (!name || !name.trim()) return;
-        const plan = planFor(c);
-        await busy(null, async () => {
-          const body = { plan_id: plan.id, group_index: S.g, kind: "add", added_exercise: { name: name.trim() } };
-          if (progress(plan).saved || S.date !== denverDate()) { const reason = window.prompt("Editing a saved workout. Reason?", ""); if (!reason) return; body.reason = reason; }
-          const r = await fn("event", body); (S.events[plan.id] = S.events[plan.id] || []).push(r.event);
-        });
-        return;
-      }
+      // The free-text "+ add to this group" is retired: adding comes from the library (sets.js), with Something else.
       case "group-done": {
         const plan = planFor(c), g = groupsOf(plan)[S.g], p = progress(plan);
         await busy("Checking off", async () => {
