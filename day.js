@@ -9,20 +9,25 @@
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
-  const D = { date: null, row: null, values: null, extras: [], notes: [], picker: null, loaded: false };
+  // extras: what was added from the library that day (on a block or on the day); sets: the changes to their sets; reason: one reason per past day, asked once.
+  const D = { date: null, row: null, values: null, extras: [], sets: [], notes: [], picker: null, loaded: false, reason: null };
+  const extrasApi = () => X.extras || null;
 
   async function load() {
     D.date = S.date;
     D.loaded = false;
+    D.reason = null;
     const [row, days, ev] = await Promise.all([
       sb.from("day_summary").select("*").eq("date", D.date).maybeSingle(),
       fn("oura-pull", { action: "days", from: D.date, to: D.date }).catch(() => ({ days: [] })),
       sb.from("events").select("*").eq("date", D.date).order("created_at"),
+      extrasApi() ? extrasApi().ready().catch(() => null) : null,
     ]);
     D.row = row.data || null;
     D.values = (days.days || [])[0] || null;
     const rows = ev.data || [];
     D.extras = rows.filter((e) => e.kind === "exercise_add");
+    D.sets = rows.filter((e) => e.is_edit_of && e.set_index != null);
     D.notes = rows.filter((e) => e.kind === "day_note");
     D.loaded = true;
   }
@@ -51,9 +56,11 @@
       <div class="min">${esc(String(b.minutes || ""))}</div></li>`).join("")}</ul>`;
   }
 
+  /** What was added from the library that day, each with its sets, editable like any other exercise. */
   function extras() {
     if (!D.extras.length) return "";
-    return `<ul class="rows">${D.extras.map((e) => { const a = e.added_exercise || {}; return `<li class="row done"><div class="ring full">✓</div><div><div class="name">${esc(a.name || "added")}</div><div class="short">done that day${e.group_key ? ` · ${esc(e.group_key.replace(/_/g, " "))}` : ""}</div></div><div class="min">+</div></li>`; }).join("")}</ul>`;
+    const api = extrasApi();
+    return `<div class="lab" style="margin-top:8px">Added that day</div><div class="stack">${D.extras.map((e) => api ? api.card(e, D.sets) : `<div class="blk exc isdone"><div class="nm">${esc((e.added_exercise || {}).name || "added")}</div></div>`).join("")}</div>`;
   }
 
   function view() {
@@ -74,29 +81,23 @@
       ${picker()}`;
   }
 
-  // ---------- the library picker ----------
+  // ---------- the library picker (the list, the card and the set editor come from sets.js) ----------
   function picker() {
     const p = D.picker;
     if (!p) return "";
-    const groups = {};
-    (p.lib || []).forEach((e) => { (groups[e.group] = groups[e.group] || []).push(e); });
     return `<div class="sheetbg" data-d="pick-cancel"></div><div class="sheet on" role="dialog" aria-modal="true"><div class="h2">${esc(p.title)}</div>
-      <div class="pick">${Object.keys(groups).map((g) => `<div class="pg">${esc(g.replace(/_/g, " "))}</div>${groups[g].map((e) => `<button data-d="pick" data-k="${esc(e.key)}">${esc(e.name)}<small> ${esc(e.words)}</small></button>`).join("")}`).join("") || "<p class='muted'>Nothing in the library.</p>"}</div>
+      <div class="pick">${extrasApi().pickList(p.lib, "data-d", true)}</div>
       <div class="acts"><button class="btn sm" data-d="pick-cancel">Cancel</button></div></div>`;
   }
-  const dur = (s) => (s >= 60 ? `${Math.floor(s / 60)} min${s % 60 ? ` ${s % 60} s` : ""}` : `${s} s`);
-  async function libraryList() {
-    const [ex, blocks] = await Promise.all([
-      sb.from("effective_library_exercises").select("key, name, block_key, mode, sets, reps, seconds, load_lb, band, position").eq("excluded", false).neq("mode", "prep").order("position"),
-      sb.from("effective_library_blocks").select("key, group_key, name").is("retired_at", null),
-    ]);
-    if (ex.error || blocks.error) throw new Error("Could not load the library.");
-    const groupOf = {}; (blocks.data || []).forEach((b) => { groupOf[b.key] = b.group_key; });
-    return (ex.data || []).map((e) => ({ ...e, group: groupOf[e.block_key] || "other", words: e.mode === "reps" ? `${e.sets} x ${e.reps ?? 0}` : `${e.sets} x ${dur(e.seconds || 0)}` }));
-  }
-  /** What the library says the exercise is, as the sets it was done with. */
-  function doneAs(e) {
-    return { key: e.key, name: e.name, mode: e.mode, sets: Array.from({ length: e.sets || 1 }, () => ({ reps: e.reps ?? null, seconds: e.seconds ?? null, load_lb: Number(e.load_lb) || 0, band: e.band || null })) };
+  /** A change to a past day needs a reason: asked once per visit to the day. */
+  function reasonFor() {
+    if (!past()) return { ok: true, reason: undefined };
+    if (!D.reason) {
+      const r = (window.prompt("Changing a past day. Reason?", "") || "").trim();
+      if (!r) return { ok: false };
+      D.reason = r;
+    }
+    return { ok: true, reason: D.reason };
   }
 
   const actions = {
@@ -106,26 +107,29 @@
       S.cur = c; S.g = Number(el.dataset.g); S.e = 0;
       go("group");
     },
-    add: () => busy("Loading the library", async () => { D.picker = { title: `Add something done ${past() ? "that day" : "today"}`, lib: await libraryList() }; }),
+    add: () => { if (!extrasApi()) return; busy("Loading the library", async () => { D.picker = { title: `Add something done ${past() ? "that day" : "today"}`, lib: await extrasApi().library() }; }); },
     "pick-cancel": () => { D.picker = null; render(); },
+    "pick-else": (el) => actions.pick(el),
     pick: (el) => {
-      const e = (D.picker.lib || []).find((x) => x.key === el.dataset.k);
+      let e;
+      if (el.dataset.d === "pick-else") { const r = extrasApi().elseEntry(); if (r.error) { S.err = r.error; render(); return; } e = r.e; }
+      else e = (D.picker.lib || []).find((x) => x.key === el.dataset.k);
       if (!e) return;
-      let reason;
-      if (past()) { reason = (window.prompt(`${e.name}, done ${niceDate(D.date)}. Reason for adding it now?`, "") || "").trim(); if (!reason) return; }
+      const why = reasonFor();
+      if (!why.ok) return;
       busy("Saving", async () => {
-        const r = await fn("event", { date: D.date, kind: "exercise_add", group_key: e.group, added_exercise: doneAs(e), reason });
+        const r = await fn("event", { date: D.date, kind: "exercise_add", group_key: e.group, added_exercise: extrasApi().doneAs(e), reason: why.reason });
         D.extras.push(r.event); D.picker = null;
-        S.msg = `${e.name} added as done.`;
+        S.msg = `${e.name} added as done. Change its sets below if they were different.`;
       });
     },
     "save-note": () => {
       const text = ($("#dayNote").value || "").trim();
       if (!text) { S.err = "Type the note first."; render(); return; }
-      let reason;
-      if (past()) { reason = (window.prompt("A note on a past day. Reason?", "") || "").trim(); if (!reason) return; }
+      const why = reasonFor();
+      if (!why.ok) return;
       busy("Saving", async () => {
-        const r = await fn("event", { date: D.date, kind: "day_note", note: text, reason });
+        const r = await fn("event", { date: D.date, kind: "day_note", note: text, reason: why.reason });
         D.notes.push(r.event);
         S.msg = "Note saved.";
       });
@@ -133,6 +137,7 @@
   };
   function bind() {
     $$("[data-d]").forEach((el) => el.addEventListener("click", (ev) => { const a = actions[el.dataset.d]; if (!a) return; if (el.dataset.d === "pick-cancel" && ev.target !== el) return; ev.stopPropagation(); a(el); }));
+    if (extrasApi()) extrasApi().bind({ adds: () => D.extras, events: () => D.sets, push: (rows) => { D.sets.push(...rows); }, reason: reasonFor });
   }
 
   window.PlannerViews = Object.assign(window.PlannerViews || {}, { day: { open: load, render: view, bind } });
