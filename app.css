@@ -219,3 +219,24 @@ code{font-family:var(--mono);font-size:12px}
 .doc a{color:var(--accent)}
 .links{text-align:center;margin-top:6px}
 .links a{color:var(--muted)}
+
+/* Check-in #1 (V2): the Prep card, the manual card and the processing screen */
+.prep .prow{display:grid;grid-template-columns:30px 1fr auto;gap:8px;align-items:center;padding:7px 8px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.prep .prow.off{opacity:.5}
+.prep .pn{font-size:15px}
+.prep .pm{display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:13px;color:var(--muted)}
+.prep .pm input{font:inherit;font-family:var(--mono);font-size:14px;width:56px;padding:4px;text-align:center;border:1px solid var(--line);border-radius:8px;background:var(--surface2);color:var(--ink)}
+.manual{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.manual label{font-size:12px;color:var(--muted);display:flex;flex-direction:column;gap:3px}
+.manual label span{letter-spacing:.04em;text-transform:uppercase}
+.manual label input{font:inherit;font-size:16px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink);width:100%}
+.manual .wide{grid-column:1/-1}
+.proc{display:grid;place-items:center;text-align:center;gap:10px;align-content:center;padding:40px 12px}
+.proc .t{font-weight:700;font-size:17px}
+.spin{width:36px;height:36px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--accent);animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none;border-top-color:var(--line)}}
+.steps{list-style:none;margin:0;padding:0;font-size:14px;color:var(--muted);display:flex;flex-direction:column;gap:4px;text-align:left}
+.steps li.ok{color:var(--ink)}
+.steps li.ok::before{content:"✓ ";color:var(--accent)}
+.steps li:not(.ok)::before{content:"· "}
