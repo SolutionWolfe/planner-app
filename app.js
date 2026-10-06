@@ -149,7 +149,7 @@
       if (e.kind === "check") st[key] = "done";
       else if (e.kind === "uncheck") st[key] = "";
       else if (e.kind === "skip") st[key] = "skip";
-      else if (e.kind === "add") (extras[e.group_index] = extras[e.group_index] || []).push(e);
+      else if (e.kind === "add" || e.kind === "exercise_add") (extras[e.group_index] = extras[e.group_index] || []).push(e);
       if (["check", "uncheck", "skip"].includes(e.kind)) last[key] = e.id;
     }
     // A tap on a whole block (closing a past day) fills in only the exercises her own taps left undecided.
@@ -472,7 +472,7 @@
       case "sign-out": await sb.auth.signOut(); S.ui = {}; saveUI(); return;
       case "go-today": await busy("Loading", async () => { S.ui.checkinId = null; await loadDay(denverDate()); go("home"); }); return;
       case "go-days": await busy("Loading", async () => { const { data } = await sb.from("checkins").select("id,date,number,tier,is_test,answered_at").order("date", { ascending: false }).order("number").limit(120); S.days = data || []; await loadDayValues(); go("days"); }); return;
-      case "open-day": await busy("Loading", async () => { S.ui.checkinId = null; await loadDay(el.dataset.date); go(homeView()); }); return;
+      case "open-day": await busy("Loading", async () => { S.ui.checkinId = null; await loadDay(el.dataset.date); const dv = extView("day"); if (dv) { await dv.open(); go("day"); } else go(homeView()); }); return;
       case "go-settings": S.msg = null; go("settings"); return;
       case "open-ext": { const ext = extView(el.dataset.view); if (ext) await busy("Loading", async () => { await ext.open(); go(el.dataset.view); }); return; }
       case "go-home": go("home"); return;

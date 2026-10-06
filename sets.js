@@ -10,7 +10,7 @@
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
   // lib: every version of every library exercise; reasons: one reason per block for a past or saved day.
-  const E = { lib: null, bands: [], reasons: {}, status: "" };
+  const E = { lib: null, bands: [], reasons: {}, status: "", picker: null };
 
   // ---------- what a set is ----------
   async function loadLibrary() {
@@ -97,11 +97,33 @@
           <ul class="sets">${rows.map((r, n) => setRow(x.mode, r.s, ei, r.i, n + 1, rows.length > 1)).join("")}</ul>
           <button class="addset" data-s="add" data-e="${ei}">+ set</button></div>`;
       }).join("")}
-      ${(p.extras[S.g] || []).map((a) => `<div class="blk exc isdone"><div class="nm">${esc((a.added_exercise && a.added_exercise.name) || "added")}<span class="tmpl on">added by you</span></div></div>`).join("")}</div>
+      ${(p.extras[S.g] || []).map((a) => { const x = a.added_exercise || {}; return `<div class="blk exc isdone"><div class="nm">${esc(x.name || "added")}<span class="tmpl on">${a.kind === "exercise_add" ? "from the library" : "added by you"}</span></div>${x.sets ? `<div class="cue">Done: ${x.sets.length} x ${x.sets[0] && x.sets[0].seconds != null ? dur(x.sets[0].seconds) : (x.sets[0] ? x.sets[0].reps : "")}</div>` : ""}</div>`; }).join("")}</div>
       <div class="muted" id="set-status" aria-live="polite">${esc(E.status)}</div>
       <div class="foot col"><button class="btn primary" data-s="block-done">Done with this block</button>
-        <button class="btn" data-act="add-exercise">+ Add to this block</button>
-        <button class="btn quiet" data-s="block-skip">Skip the rest, with a reason</button></div>`;
+        <button class="btn" data-s="add-lib">+ Add from the library</button>
+        <button class="btn quiet" data-s="block-skip">Skip the rest, with a reason</button></div>
+      ${picker()}`;
+  }
+
+  // ---------- the library picker (D75) ----------
+  function picker() {
+    const p = E.picker;
+    if (!p) return "";
+    const groups = {};
+    (p.lib || []).forEach((e) => { (groups[e.group] = groups[e.group] || []).push(e); });
+    return `<div class="sheetbg" data-s="pick-cancel"></div><div class="sheet on" role="dialog" aria-modal="true"><div class="h2">${esc(p.title)}</div>
+      <label class="tog"><input type="checkbox" id="keepTomorrow" ${p.keep ? "checked" : ""}> Also keep it in this block from tomorrow</label>
+      <div class="pick">${Object.keys(groups).map((g) => `<div class="pg">${esc(g.replace(/_/g, " "))}</div>${groups[g].map((e) => `<button data-s="pick" data-k="${esc(e.key)}">${esc(e.name)}<small> ${esc(e.words)}</small></button>`).join("")}`).join("")}</div>
+      <div class="acts"><button class="btn sm" data-s="pick-cancel">Cancel</button></div></div>`;
+  }
+  async function libraryList() {
+    const [ex, blocks] = await Promise.all([
+      sb.from("effective_library_exercises").select("key, name, block_key, mode, sets, reps, seconds, load_lb, band, cues, watch_for, done_when, position").eq("excluded", false).neq("mode", "prep").order("position"),
+      sb.from("effective_library_blocks").select("key, group_key").is("retired_at", null),
+    ]);
+    if (ex.error || blocks.error) throw new Error("Could not load the library.");
+    const groupOf = {}; (blocks.data || []).forEach((b) => { groupOf[b.key] = b.group_key; });
+    return (ex.data || []).map((e) => ({ ...e, group: groupOf[e.block_key] || "other", words: e.mode === "reps" ? `${e.sets} x ${e.reps ?? 0}` : `${e.sets} x ${dur(e.seconds || 0)}` }));
   }
 
   // ---------- saving ----------
@@ -184,6 +206,33 @@
         E.status = "";
         if (S.g < X.groupsOf(plan).length - 1) S.g++;
         go("summary");
+      });
+    },
+    "add-lib": async () => {
+      const { g } = current();
+      await busy("Loading the library", async () => { E.picker = { title: `Add to ${g.name} today`, lib: await libraryList(), keep: false }; });
+    },
+    "pick-cancel": () => { E.picker = null; render(); },
+    "pick": async (el) => {
+      const { plan, g } = current();
+      const e = (E.picker.lib || []).find((x) => x.key === el.dataset.k);
+      if (!e) return;
+      const keep = !!($("#keepTomorrow") && $("#keepTomorrow").checked);
+      const why = reasonFor(plan);
+      if (!why.ok) return;
+      await busy("Adding", async () => {
+        const done = { key: e.key, name: e.name, mode: e.mode, sets: Array.from({ length: e.sets || 1 }, () => ({ reps: e.reps ?? null, seconds: e.seconds ?? null, load_lb: Number(e.load_lb) || 0, band: e.band || null })) };
+        const r = await fn("event", { plan_id: plan.id, group_index: S.g, kind: "exercise_add", group_key: g.group_key || null, added_exercise: done, reason: why.reason });
+        (S.events[plan.id] = S.events[plan.id] || []).push(r.event);
+        let kept = "";
+        if (keep && g.key) {
+          try {
+            await fn("rules-update", { op: "exercise", reason: `added to ${g.name} from the workout`, apply: "tomorrow", exercise: { name: e.name, block_key: g.key, mode: e.mode, sets: e.sets, reps: e.reps, seconds: e.seconds, load_lb: e.load_lb, band: e.band, cues: e.cues, watch_for: e.watch_for, done_when: e.done_when } });
+            kept = `, and kept in ${g.name} from tomorrow`;
+          } catch (err) { kept = `; not kept in the block (${err.message || "that did not go through"})`; }
+        }
+        E.picker = null;
+        E.status = `${e.name} added as done today${kept}.`;
       });
     },
     "block-skip": async () => {
