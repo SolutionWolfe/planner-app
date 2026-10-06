@@ -518,10 +518,10 @@
       case "fu-send": {
         const answer = ($("#fuText").value || "").trim();
         if (!answer) { S.err = "Pick or type an answer."; render(); return; }
-        await busy("Building your plan", async () => { const r = await fn("checkin-submit", { checkin_id: c.id, followup: { id: S.followup.id, answer } }); await applySubmit(r); });
+        await busy("Building your plan", async () => { const r = await fn("checkin-submit", { checkin_id: c.id, followup: { id: S.followup.id, answer }, ...(S.v2Extra || {}) }); await applySubmit(r); });
         return;
       }
-      case "resume-plan": await busy("Building your plan", async () => { const r = await fn("checkin-submit", { checkin_id: el.dataset.id }); await applySubmit(r); }); return;
+      case "resume-plan": await busy("Building your plan", async () => { const r = await fn("checkin-submit", { checkin_id: el.dataset.id, ...(S.v2Extra || {}) }); await applySubmit(r); }); return;
       case "open-group": S.g = Number(el.dataset.g); S.e = 0; go("group"); return;
       case "open-exercise": S.e = Number(el.dataset.e); go("exercise"); return;
       case "toggle": {
@@ -702,6 +702,6 @@
     }
   }
   // What the rules screens (rules.js) use from here.
-  window.PlannerCtx = { sb, fn, esc, busy, go, render, tierBox, S, denverDate, niceDate, loadDay, planFor, groupsOf, progress };
+  window.PlannerCtx = { sb, fn, esc, busy, go, render, tierBox, S, denverDate, niceDate, loadDay, planFor, groupsOf, progress, applySubmit, viewCheckinV1: viewCheckin };
   start();
 })();
