@@ -192,7 +192,8 @@
         await X.loadDay(y.date);
         S.cur = S.checkins.find((c) => c.id === y.plan_checkin_id) || S.checkins.find((c) => !c.is_test) || S.cur;
         S.g = 0; S.e = 0; S.msg = null;
-        go("summary");
+        const dv = (window.PlannerViews || {}).day;
+        if (dv) { await dv.open(); go("day"); } else go("summary");
       });
     },
     "start": async () => {

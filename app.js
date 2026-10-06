@@ -143,13 +143,14 @@
     let saved = false;
     for (const e of S.events[plan.id] || []) {
       if (e.group_index == null && e.kind === "done") { saved = true; continue; }
-      if (e.group_index != null && e.exercise_index == null) { if (e.kind === "check" || e.kind === "skip") whole[e.group_index] = e.kind === "check" ? "done" : "skip"; continue; }
       if (e.set_index != null) continue; // a change to one set; the block screen reads those
+      // Something added to the block (V1 "add", or from the library): it has a group and no exercise index.
+      if (e.kind === "add" || e.kind === "exercise_add") { if (e.group_index != null) (extras[e.group_index] = extras[e.group_index] || []).push(e); continue; }
+      if (e.group_index != null && e.exercise_index == null) { if (e.kind === "check" || e.kind === "skip") whole[e.group_index] = e.kind === "check" ? "done" : "skip"; continue; }
       const key = `${e.group_index}.${e.exercise_index}`;
       if (e.kind === "check") st[key] = "done";
       else if (e.kind === "uncheck") st[key] = "";
       else if (e.kind === "skip") st[key] = "skip";
-      else if (e.kind === "add") (extras[e.group_index] = extras[e.group_index] || []).push(e);
       if (["check", "uncheck", "skip"].includes(e.kind)) last[key] = e.id;
     }
     // A tap on a whole block (closing a past day) fills in only the exercises her own taps left undecided.
@@ -428,7 +429,7 @@
     });
     on("#meetTime", "change", (ev) => { const d = draft(); d.meetTime = ev.target.value; saveUI(); render(); });
     on("#sched", "input", (ev) => { draft().sched = ev.target.value; saveUI(); });
-    on("#unus", "input", (ev) => { const d = draft(); d.unus = ev.target.value; if (ev.target.value) d.unusNone = false; saveUI(); $("[data-act=unus-none]").setAttribute("aria-pressed", String(d.unusNone)); $("[data-act=get-plan]").disabled = !draftValid(d); });
+    on("#unus", "input", (ev) => { const d = draft(); d.unus = ev.target.value; if (ev.target.value) d.unusNone = false; saveUI(); const none = $("[data-act=unus-none]"), get = $("[data-act=get-plan]"); if (none) none.setAttribute("aria-pressed", String(d.unusNone)); if (get) get.disabled = !draftValid(d); });
     on("#feelText", "input", (ev) => { draft().feelText = ev.target.value; saveUI(); });
     on("#email", "input", (ev) => { S.ui.signinEmailTyped = ev.target.value; });
     on("#shots", "change", async (ev) => {
@@ -472,7 +473,7 @@
       case "sign-out": await sb.auth.signOut(); S.ui = {}; saveUI(); return;
       case "go-today": await busy("Loading", async () => { S.ui.checkinId = null; await loadDay(denverDate()); go("home"); }); return;
       case "go-days": await busy("Loading", async () => { const { data } = await sb.from("checkins").select("id,date,number,tier,is_test,answered_at").order("date", { ascending: false }).order("number").limit(120); S.days = data || []; await loadDayValues(); go("days"); }); return;
-      case "open-day": await busy("Loading", async () => { S.ui.checkinId = null; await loadDay(el.dataset.date); go(homeView()); }); return;
+      case "open-day": await busy("Loading", async () => { S.ui.checkinId = null; await loadDay(el.dataset.date); const dv = extView("day"); if (dv) { await dv.open(); go("day"); } else go(homeView()); }); return;
       case "go-settings": S.msg = null; go("settings"); return;
       case "open-ext": { const ext = extView(el.dataset.view); if (ext) await busy("Loading", async () => { await ext.open(); go(el.dataset.view); }); return; }
       case "go-home": go("home"); return;

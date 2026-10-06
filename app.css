@@ -240,3 +240,21 @@ code{font-family:var(--mono);font-size:12px}
 .steps li.ok{color:var(--ink)}
 .steps li.ok::before{content:"✓ ";color:var(--accent)}
 .steps li:not(.ok)::before{content:"· "}
+
+/* The Day view and the library picker (V2 step 8) */
+.vals{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.val{border:1px solid var(--line);border-radius:10px;padding:8px;background:var(--surface2)}
+.val b{display:block;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.val span{font-family:var(--mono);font-size:16px}
+.pick{display:flex;flex-direction:column;gap:4px;max-height:50vh;overflow:auto}
+.pick .pg{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+.pick button{font:inherit;font-size:14px;text-align:left;padding:8px 10px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.pick button small{color:var(--muted);font-family:var(--mono);font-size:12px}
+.tog{display:flex;align-items:center;gap:8px;font-size:14px}
+.tog input{width:18px;height:18px}
+.else{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-family:var(--mono);font-size:12px;color:var(--muted)}
+.else input,.else select{font:inherit;font-family:var(--mono);font-size:16px;min-height:38px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface2);color:var(--ink)}
+.else input[type=text],.else select{flex:1 1 100%;font-family:var(--font)}
+.else input[type=number]{width:64px;text-align:center}
+.else label{display:flex;align-items:center;gap:4px}
+.pick .else button{flex:1 1 auto;text-align:center;font-weight:700}
