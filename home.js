@@ -134,7 +134,7 @@
             <div class="ring ${b.status === "done" ? "full" : ""}">${b.status === "done" ? "✓" : b.status === "skip" ? "–" : `${b.done + b.skipped}/${b.exercises}`}</div><div><div class="name">${esc(b.name)}</div><div class="short">${b.status === "open" ? "open" : b.status === "skip" ? "skipped" : "done"}${b.added_id ? " · added" : b.checkin_number !== t.plan_checkin_number ? " · earlier plan" : ""}</div></div><div class="min">${b.minutes ?? ""}</div></li>`).join("")}</ul>`;
       } else {
         const skipped = names(blocks, "skip");
-        body = tierBox("green", "Done for today", blocks.length ? `${t.total_minutes} minutes planned, ${t.minutes_done} done${skipped.length ? `, ${skipped.join(", ")} skipped` : ""}.` : "Nothing planned today.");
+        body = tierBox("green", "Done for today", blocks.length ? `${blocks.reduce((n, b) => n + (Number(b.minutes) || 0), 0)} minutes planned, ${t.minutes_done} done${skipped.length ? `, ${skipped.join(", ")} skipped` : ""}.` : "Nothing planned today.");
       }
       foot = `${waiting}<button class="btn ${state === "in_progress" && !waiting ? "primary" : ""}" data-act="open-plan" data-id="${t.plan_checkin_id}">Open today's plan</button>
         ${waiting ? "" : `<button class="btn" data-act="start-checkin">Check in again</button>`}

@@ -292,15 +292,31 @@
       <div class="foot"><button class="btn primary" data-act="fu-send" ${S.busy ? "disabled" : ""}>Answer</button></div>`;
   }
 
+  /** The blocks finished under the day's earlier plans: a later check-in adds to them and replaces only what was left unfinished. */
+  function earlierDone(c) {
+    const out = [];
+    S.checkins.filter((x) => x.number < c.number && x.is_test === c.is_test && planFor(x)).forEach((x) => {
+      const plan = planFor(x), p = progress(plan);
+      groupsOf(plan).forEach((g, gi) => {
+        const st = g.exercises.map((_, ei) => p.st[`${gi}.${ei}`]);
+        if (st.length && st.every((v) => v === "done" || v === "skip")) out.push({ c: x, gi, g, done: st.includes("done") });
+      });
+    });
+    return out;
+  }
+
   function viewSummary() {
     const c = S.cur, plan = planFor(c);
     if (!plan) return viewHome();
     const p = progress(plan);
     const groups = groupsOf(plan);
+    const earlier = earlierDone(c);
+    const earlierMin = earlier.filter((b) => b.done).reduce((n, b) => n + (Number(b.g.minutes) || 0), 0);
     return `${tierBox(c.tier || "plain", (c.tier || "plan").replace(/^\w/, (x) => x.toUpperCase()) + (c.is_test ? " (test check-in)" : ""), plan.tier_line)}
       ${plan.plan.note ? `<p class="muted" style="margin:0 6px 8px">${esc(plan.plan.note)}</p>` : ""}
-      <div class="total"><span class="n">${plan.total_minutes}</span><span class="u">min</span><span class="left">window ${plan.window_minutes ?? "?"}${plan.plan.proposed_start ? ` · start ${plan.plan.proposed_start}` : ""}${plan.plan.later_workout_time ? ` · later slot ${plan.plan.later_workout_time}` : ""}${p.saved ? " · saved" : ""}</span></div>
-      <ul class="rows">${groups.map((g, gi) => { const s = groupStats(plan, gi); return `<li class="row ${s.full ? "done" : ""} ${S.g === gi && !s.full ? "cur" : ""}" data-act="open-group" data-g="${gi}">
+      <div class="total"><span class="n">${plan.total_minutes}</span><span class="u">min</span><span class="left">window ${plan.window_minutes ?? "?"}${plan.plan.proposed_start ? ` · start ${plan.plan.proposed_start}` : ""}${plan.plan.later_workout_time ? ` · later slot ${plan.plan.later_workout_time}` : ""}${p.saved ? " · saved" : ""}${earlierMin ? ` · ${earlierMin} min done earlier today` : ""}</span></div>
+      <ul class="rows">${earlier.map((b) => `<li class="row ${b.done ? "done" : "skip"}" data-act="open-earlier" data-id="${b.c.id}" data-g="${b.gi}">
+        <div class="ring ${b.done ? "full" : ""}">${b.done ? "✓" : "–"}</div><div><div class="name">${esc(b.g.name)}</div><div class="short">${b.done ? "done" : "skipped"} · earlier plan</div></div><div class="min">${b.g.minutes}</div></li>`).join("")}${groups.map((g, gi) => { const s = groupStats(plan, gi); return `<li class="row ${s.full ? "done" : ""} ${S.g === gi && !s.full ? "cur" : ""}" data-act="open-group" data-g="${gi}">
         <div class="ring ${s.full ? "full" : ""}">${s.full ? "✓" : `${s.done}/${s.tot}`}</div><div><div class="name">${esc(g.name)}</div><div class="short">${esc(g.exercises.map((e) => e.name).join(", "))}</div></div><div class="min">${g.minutes}</div></li>`; }).join("")}</ul>
       <div class="foot"><button class="btn" data-act="go-calendar">Today's Calendar</button><button class="btn primary" data-act="end-workout">${p.saved ? "Workout summary" : "End workout"}</button></div>`;
   }
@@ -414,6 +430,9 @@
 
   // ---------- actions ----------
   function go(view) {
+    // Back from a block of an earlier plan lands on the plan it was opened from.
+    if (view === "summary" && S.backTo) { S.cur = S.checkins.find((x) => x.id === S.backTo) || S.cur; S.g = 0; S.e = 0; }
+    if (!["group", "exercise"].includes(view)) S.backTo = null;
     S.view = view; S.ui.view = view; S.ui.checkinId = S.cur ? S.cur.id : null; S.ui.g = S.g; S.ui.e = S.e; saveUI();
     const ext = extView(view);
     if (ext && ext.enter) ext.enter();
@@ -524,6 +543,7 @@
       }
       case "resume-plan": await busy("Building your plan", async () => { const r = await fn("checkin-submit", { checkin_id: el.dataset.id, ...(S.v2Extra || {}) }); await applySubmit(r); }); return;
       case "open-group": S.g = Number(el.dataset.g); S.e = 0; go("group"); return;
+      case "open-earlier": S.backTo = c ? c.id : null; S.cur = S.checkins.find((x) => x.id === el.dataset.id) || c; S.g = Number(el.dataset.g); S.e = 0; go("group"); return;
       case "open-exercise": S.e = Number(el.dataset.e); go("exercise"); return;
       case "toggle": {
         const plan = planFor(c), ei = Number(el.dataset.e), e = groupsOf(plan)[S.g].exercises[ei];
