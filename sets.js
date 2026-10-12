@@ -146,6 +146,7 @@
     const p = X.progress(plan);
     const past = S.date !== X.denverDate();
     return `<div class="crumb"><button data-act="go-summary">‹ Plan</button><span class="pos">${esc(g.name)} · ${g.minutes} min</span></div>
+      <input class="txt note" type="text" maxlength="400" data-n="block" value="${esc(X.blockNote(plan, S.g, g))}" placeholder="Note on this block, today" aria-label="Note on this block for today">
       ${past || p.saved ? `<p class="muted">${past ? "A past day" : "A saved workout"}: the first change asks for a reason, once.</p>` : ""}
       <div class="stack">${g.exercises.map((ex, ei) => {
         const st = p.st[`${S.g}.${ei}`] || "";
@@ -153,6 +154,7 @@
         return `<div class="blk exc ${st === "done" ? "isdone" : ""} ${st === "skip" ? "isskip" : ""}">
           <div class="nm"><button class="link" data-act="open-exercise" data-e="${ei}">${esc(ex.name)}</button><span class="tmpl">${x.mode}</span>${st === "done" ? '<span class="tmpl on">done</span>' : st === "skip" ? '<span class="tmpl">skipped</span>' : ""}</div>
           ${ex.prescription ? `<div class="cue">Plan: ${esc(ex.prescription)}</div>` : ""}
+          <input class="txt note" type="text" maxlength="400" data-n="exercise" data-e="${ei}" value="${esc(X.exerciseNote(plan, S.g, ei, ex))}" placeholder="Note on this exercise, today" aria-label="Note on ${esc(ex.name)} for today">
           <ul class="sets">${rows.map((r, n) => setRow(x.mode, r.s, `data-e="${ei}"`, r.i, n + 1, rows.length > 1)).join("")}</ul>
           <button class="addset" data-s="add" data-e="${ei}">+ set</button></div>`;
       }).join("")}
@@ -367,6 +369,24 @@
     if (plan) ctx = { adds: () => X.progress(plan).extras[S.g] || [], events: () => S.events[plan.id] || [], push: (rows) => { (S.events[plan.id] = S.events[plan.id] || []).push(...rows); }, reason: () => reasonFor(plan) };
     $$("[data-s]").forEach((el) => el.addEventListener("click", (ev) => { const a = actions[el.dataset.s]; if (a) { ev.stopPropagation(); a(el); } }));
     $$(".set [data-k]").forEach((el) => el.addEventListener("change", () => edited(el)));
+    $$("[data-n]").forEach((el) => el.addEventListener("change", () => noted(el)));
+  }
+  /** A note typed under the block or an exercise is saved for today, one events row, the library unchanged (D99). */
+  async function noted(el) {
+    const { plan } = current();
+    if (!plan) return;
+    const note = (el.value || "").trim();
+    const body = el.dataset.n === "block"
+      ? { plan_id: plan.id, group_index: S.g, kind: "block_note", note }
+      : { plan_id: plan.id, group_index: S.g, exercise_index: Number(el.dataset.e), kind: "exercise_note", note };
+    const why = reasonFor(plan);
+    if (!why.ok) return;
+    if (why.reason) body.reason = why.reason;
+    try {
+      const r = await fn("event", body);
+      (S.events[plan.id] = S.events[plan.id] || []).push(r.event);
+      say("Note saved for today.");
+    } catch (e) { say(`The note did not save: ${e.message || e}`); }
   }
   function enter() {
     E.status = "";

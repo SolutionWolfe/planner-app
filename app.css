@@ -258,3 +258,21 @@ code{font-family:var(--mono);font-size:12px}
 .else input[type=number]{width:64px;text-align:center}
 .else label{display:flex;align-items:center;gap:4px}
 .pick .else button{flex:1 1 auto;text-align:center;font-weight:700}
+
+/* V2 step 8c, Goals: the goal line on a check-in, notes typed in place, the phase row on a grid, the schedule table. */
+.goalline{font-size:14px;padding:10px 12px;border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;margin:0 0 12px;background:var(--surface)}
+.txt.note{margin:6px 0 0;min-height:40px;font-size:14px;border-style:dashed}
+.txt.note:focus{border-style:solid}
+.bnote{border-left:2px solid var(--accent);padding-left:8px;margin-top:3px;color:var(--ink)}
+.phases{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:0 0 10px;font-size:13px;color:var(--muted)}
+.phases button{font:inherit;font-family:var(--mono);font-size:13px;min-width:40px;min-height:36px;padding:6px 0;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.phases button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.sched{width:100%;border-collapse:collapse;font-size:13px;background:var(--surface);margin:0 0 10px}
+.sched th,.sched td{border:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:top}
+.sched th{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:400}
+.sched td.c{cursor:pointer;min-height:44px}
+.sched tr.cur td,.sched tr.cur th{background:var(--surface2)}
+.goalrow{display:grid;grid-template-columns:30px 1fr auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+.goalrow:last-child{border-bottom:0}
+.goalrow small{display:block;color:var(--muted);font-size:12px}
+.saverow{display:flex;flex-direction:column;gap:6px;margin-top:8px}

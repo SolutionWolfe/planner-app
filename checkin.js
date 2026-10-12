@@ -73,12 +73,19 @@
     K.loading = true; K.error = null;
     try {
       const today = denverDate();
-      const [conn, days, prep] = await Promise.all([
+      const [conn, days, prep, goals, sched, groups] = await Promise.all([
         fn("oura-connect", { action: "check" }).catch(() => ({ state: "none" })),
         fn("oura-pull", { action: "days", from: today, to: today }).catch(() => ({ days: [] })),
         sb.from("effective_library_exercises").select("key, name, seconds, position").eq("block_key", "prep").eq("excluded", false).order("position"),
+        sb.from("effective_goals").select("key, name, phases, phase, day, active, retired_at").eq("active", true).is("retired_at", null).limit(1),
+        sb.from("effective_schedule_days").select("goal_key, number, slot, sessions, retired_at").is("retired_at", null),
+        sb.from("effective_training_groups").select("key, name").is("retired_at", null),
       ]);
       K.conn = conn;
+      // The goal (step 8c, D97): which day of its schedule this is and what the slot brings. Nothing to answer.
+      K.goal = (goals.data || [])[0] || null;
+      K.sched = sched.data || [];
+      K.groupNames = Object.fromEntries((groups.data || []).map((g) => [g.key, g.name]));
       K.values = (days.days || [])[0] || null;
       K.prep = (prep.data || []).map((e) => ({ key: e.key, name: e.name, minutes: Math.round((e.seconds || 0) / 60) }));
       K.loadedFor = key;
@@ -91,6 +98,18 @@
   }
 
   const connected = () => K.conn && K.conn.state === "connected";
+  /** The line at the top of the check-in: the goal's day and the sessions this slot brings (D97). */
+  function goalLine() {
+    const g = K.goal;
+    if (!g) return "";
+    const days = K.sched.filter((d) => d.goal_key === g.key).reduce((m, d) => Math.max(m, d.number), 0);
+    const names = (slot) => { const d = K.sched.find((x) => x.goal_key === g.key && x.number === g.day && x.slot === slot); return d ? d.sessions.map((k) => K.groupNames[k] || k).join(", ") : null; };
+    const m = names("morning"), l = names("later");
+    const text = laterCheckin()
+      ? `Later today: ${l || "nothing planned"}.`
+      : `This morning: ${m === null ? "the Morning grid" : m || "rest"}. Later: ${l || "nothing planned"}.`;
+    return `<div class="goalline"><b>${esc(g.name)}: phase ${g.phase} of ${g.phases}, day ${g.day} of ${days || 1}.</b> ${text}</div>`;
+  }
   const needsManual = () => !connected() || !K.values || (K.values.readiness == null && K.values.sleep == null && K.values.rest_hr == null);
 
   function prepToday(d) {
@@ -113,7 +132,7 @@
         <input class="txt" id="feelText" placeholder="optional: where or what" aria-label="Feel notes" value="${esc(d.feelText)}"></div>`;
     if (laterCheckin()) {
       return `${tierBox("plain", `Check-in #${c.number}${c.is_test ? " (test)" : ""}`, "Done blocks stay as they are. Only what is left gets planned again.")}
-        ${K.error ? `<div class="err">${esc(K.error)}</div>` : ""}
+        ${K.error ? `<div class="err">${esc(K.error)}</div>` : ""}${goalLine()}
         <div class="q"><div class="lab">How much time is left today</div>
           <div class="opts">${LEFT.map(([k, label]) => `<button class="opt" data-c="left" data-v="${k}" aria-pressed="${d.left === k}">${label}</button>`).join("")}</div>
           ${d.left === "other" ? `<input class="txt" id="leftMin" type="number" inputmode="numeric" min="0" max="600" placeholder="minutes" aria-label="Minutes left" value="${esc(d.leftMin)}">` : ""}
@@ -122,7 +141,7 @@
         <div class="foot"><button class="btn primary" data-c="make-plan" ${valid(d) && !S.busy ? "" : "disabled"}>Revise the rest of today</button></div>`;
     }
     return `${tierBox("plain", `Check-in #${c.number}${c.is_test ? " (test)" : ""}`, nightLine)}
-      ${K.error ? `<div class="err">${esc(K.error)}</div>` : ""}
+      ${K.error ? `<div class="err">${esc(K.error)}</div>` : ""}${goalLine()}
       ${connected() && needsManual() ? `<button class="btn accent" data-c="open-oura" ${K.syncing ? "disabled" : ""}>Open Oura to sync</button>` : ""}
       <div class="q"><div class="lab">First commitment today</div>
         <div class="opts"><input type="time" id="meetTime" class="opt" aria-label="First commitment time" value="${esc(d.meetTime)}" ${d.meetNone ? "disabled" : ""}><button class="opt" data-c="meet-none" aria-pressed="${d.meetNone}">None today</button></div>
