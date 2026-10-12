@@ -51,19 +51,48 @@
     </div>`;
   }
 
+  // ---------- what Oura recorded (the newest outcome per workout, from the day's events) ----------
+  /** Oura's activity names, as words: strengthTraining is "strength training", HIIT stays. */
+  const activityLabel = (a) => (a ? String(a).replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase().replace(/^hiit$/, "HIIT") : "workout");
+  const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  function ouraOutcomes() {
+    const newest = new Map();
+    D.all.filter((e) => (e.kind === "oura_matched" || e.kind === "oura_detected") && e.oura_workout_key).forEach((e) => newest.set(e.oura_workout_key, e));
+    return [...newest.values()];
+  }
+  const workoutOf = (key) => ((D.values && D.values.workouts) || []).find((w) => w.key === key);
+  const describe = (w) => `${activityLabel(w && w.activity)}${w && w.minutes != null ? `, ${w.minutes} min` : ""}`;
+  /** The line under a block Oura's workout belongs to; nothing when Oura saw nothing for it. */
+  function ouraLine(isMine) {
+    const m = ouraOutcomes().find((e) => e.kind === "oura_matched" && isMine(e));
+    if (!m) return "";
+    return `<div class="oline"><span class="dot"></span><span>Oura: ${esc(describe(workoutOf(m.oura_workout_key)))}</span></div>`;
+  }
+  /** What Oura saw that nothing was tapped for, with the block it would fit when there is one. */
+  function seen() {
+    const rows = ouraOutcomes().filter((e) => e.kind === "oura_detected");
+    if (!rows.length) return "";
+    const nameOf = (e) => {
+      if (e.is_edit_of) { const a = D.added.find((x) => x.id === e.is_edit_of); return a && a.added_block ? a.added_block.name : null; }
+      if (e.plan_id && e.group_index != null && D.row && Array.isArray(D.row.blocks)) { const b = D.row.blocks.find((x) => x.plan_id === e.plan_id && x.group_index === e.group_index); return b ? b.name : null; }
+      return null;
+    };
+    return `<div class="seen"><b>Oura saw, not tapped</b>${rows.map((e) => { const w = workoutOf(e.oura_workout_key); const n = nameOf(e); return `<span>${esc(cap(describe(w)))}${w && w.start ? ` at ${esc(w.start)}` : ""}${n ? `, fits ${esc(n)}` : ""}</span>`; }).join("")}</div>`;
+  }
+
   /** The plan's blocks from day_summary, then the blocks added that day, read from their own rows (so a day with no plan shows them too). */
   function blocks() {
     const r = D.row;
     const planned = r && Array.isArray(r.blocks) ? r.blocks.filter((b) => b.status !== "replaced" && b.group_index != null) : [];
     const api = blocksApi();
     const added = api ? D.added.map((a) => ({ a, s: api.state(a, D.all) })) : [];
-    if (!planned.length && !added.length) return `<p class="muted">No plan that day.</p>`;
-    const row = (b, attrs, extra) => `<li class="row ${b.status === "done" ? "done" : ""} ${b.status === "skip" ? "skip" : ""}" ${attrs}>
+    if (!planned.length && !added.length) return `<p class="muted">No plan that day.</p>${seen()}`;
+    const row = (b, attrs, extra, oura) => `<li class="row ${b.status === "done" ? "done" : ""} ${b.status === "skip" ? "skip" : ""}" ${attrs}>
       <div class="ring ${b.status === "done" ? "full" : ""}">${b.status === "done" ? "✓" : b.status === "skip" ? "–" : `${b.done}/${b.exercises}`}</div>
-      <div><div class="name">${esc(b.name)}</div><div class="short">${b.status === "done" ? "done" : b.status === "skip" ? "skipped" : "open"}${b.recorded_seconds ? ` · ${Math.round(b.recorded_seconds / 60)} min` : ""}${extra}</div></div>
+      <div><div class="name">${esc(b.name)}</div><div class="short">${b.status === "done" ? "done" : b.status === "skip" ? "skipped" : "open"}${b.recorded_seconds ? ` · ${Math.round(b.recorded_seconds / 60)} min` : ""}${extra}</div>${oura}</div>
       <div class="min">${esc(String(b.minutes ?? ""))}</div></li>`;
-    return `<ul class="rows">${planned.map((b) => row(b, `data-d="block" data-c="${esc(b.checkin_id)}" data-g="${b.group_index}"`, "")).join("")}
-      ${added.map(({ a, s }) => { const x = a.added_block || {}; return row({ ...s, name: x.name || "added", minutes: x.minutes }, `data-d="ablock" data-a="${esc(a.id)}"`, ` · added${x.group_key ? ", " + esc(String(x.group_key).replace(/_/g, " ")) : ""}`); }).join("")}</ul>`;
+    return `<ul class="rows">${planned.map((b) => row(b, `data-d="block" data-c="${esc(b.checkin_id)}" data-g="${b.group_index}"`, "", ouraLine((e) => !e.is_edit_of && e.plan_id === b.plan_id && e.group_index === b.group_index))).join("")}
+      ${added.map(({ a, s }) => { const x = a.added_block || {}; return row({ ...s, name: x.name || "added", minutes: x.minutes }, `data-d="ablock" data-a="${esc(a.id)}"`, ` · added${x.group_key ? ", " + esc(String(x.group_key).replace(/_/g, " ")) : ""}`, ouraLine((e) => e.is_edit_of === a.id)); }).join("")}</ul>${seen()}`;
   }
 
   /** What was added from the library that day, each with its sets, editable like any other exercise. */

@@ -20,7 +20,7 @@ The static web app, served by GitHub Pages. Public means anyone can read and cop
 
 | Thing | Where |
 | --- | --- |
-| Page, styles, logic | `index.html`, `app.css`, `app.js`; screens in `rules.js`, `home.js`, `sets.js`, `connect.js`, `checkin.js`, `day.js`, `blocks.js` (a whole block added to a day: the picker, the added-block screen; the free-text "+ add to this group" of the old group view is retired) |
+| Page, styles, logic | `index.html`, `app.css`, `app.js`; screens in `rules.js`, `home.js`, `sets.js`, `connect.js`, `checkin.js`, `day.js` (a day from the tables; under a block, one line with the activity and minutes of the Oura workout the backend matched to it, and a box "Oura saw, not tapped" for the workouts it matched to nothing; the app draws what the record says and decides nothing), `blocks.js` (a whole block added to a day: the picker, the added-block screen; the free-text "+ add to this group" of the old group view is retired) |
 | Goals (V2 step 8c) | `rules.js`: Goals (counters, Restart today, phases), Schedule, the grid with a tab per session type and phase chips, block notes in the Library; `checkin.js` shows the goal line; `sets.js` has the note fields of a block and an exercise; `app.js` shows a note on a plan block |
 | Return from Connect | The app's own address with two values in the query; `app.js` takes them out of the address on load and hands them to `connect.js` |
 | Service worker | `sw.js`, scoped to `/planner-app/`; shows every push; caches only the shell |
