@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Test. Working agreements for any Claude session in this repo. Do not relax them. The private half of this system carries the full rules and the runbook; a session that works here reads those first.
+Working agreements for any Claude session in this repo. Do not relax them. The private half of this system carries the full rules and the runbook; a session that works here reads those first.
 
 ## What this repo is
 
