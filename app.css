@@ -4,7 +4,7 @@
   --accent:#2F7D6B; --accent-ink:#FFFFFF;
   --green:#2F7D6B; --yellow:#B7841C; --red:#B4453A;
   --green-bg:#E3F1EC; --yellow-bg:#F7EEDC; --red-bg:#F6E3E0;
-  --skip:#8A94A0;
+  --skip:#8A94A0; --oura:#4B5FA6; --oura-bg:#E8EBF7;
   --font:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"DM Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
 }
@@ -14,7 +14,7 @@
     --accent:#4FB39B; --accent-ink:#0F1A17;
     --green:#4FB39B; --yellow:#D9A441; --red:#E06A5E;
     --green-bg:#1C3A32; --yellow-bg:#3A2F16; --red-bg:#3E1F1B;
-    --skip:#7A8592;
+    --skip:#7A8592; --oura:#9FAEEB; --oura-bg:#232B44;
   }
 }
 *{box-sizing:border-box}
@@ -276,3 +276,9 @@ code{font-family:var(--mono);font-size:12px}
 .goalrow:last-child{border-bottom:0}
 .goalrow small{display:block;color:var(--muted);font-size:12px}
 .saverow{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+
+/* Oura match lines on the Day view (V2 step 9): one line under a matched block, a box for what Oura saw that nothing was tapped for. */
+.oline{display:inline-flex;align-items:center;gap:5px;color:var(--oura);font-size:13px;margin-top:3px}
+.oline .dot{width:7px;height:7px;border-radius:50%;background:var(--oura);flex:0 0 auto}
+.seen{margin:10px 0 0;padding:10px 12px;border-radius:12px;background:var(--oura-bg);color:var(--ink);font-size:14px;display:flex;flex-direction:column;gap:4px}
+.seen b{color:var(--oura);font-size:12px;letter-spacing:.04em;text-transform:uppercase}
