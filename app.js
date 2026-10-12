@@ -317,8 +317,19 @@
       <div class="total"><span class="n">${plan.total_minutes}</span><span class="u">min</span><span class="left">window ${plan.window_minutes ?? "?"}${plan.plan.proposed_start ? ` · start ${plan.plan.proposed_start}` : ""}${plan.plan.later_workout_time ? ` · later slot ${plan.plan.later_workout_time}` : ""}${p.saved ? " · saved" : ""}${earlierMin ? ` · ${earlierMin} min done earlier today` : ""}</span></div>
       <ul class="rows">${earlier.map((b) => `<li class="row ${b.done ? "done" : "skip"}" data-act="open-earlier" data-id="${b.c.id}" data-g="${b.gi}">
         <div class="ring ${b.done ? "full" : ""}">${b.done ? "✓" : "–"}</div><div><div class="name">${esc(b.g.name)}</div><div class="short">${b.done ? "done" : "skipped"} · earlier plan</div></div><div class="min">${b.g.minutes}</div></li>`).join("")}${groups.map((g, gi) => { const s = groupStats(plan, gi); return `<li class="row ${s.full ? "done" : ""} ${S.g === gi && !s.full ? "cur" : ""}" data-act="open-group" data-g="${gi}">
-        <div class="ring ${s.full ? "full" : ""}">${s.full ? "✓" : `${s.done}/${s.tot}`}</div><div><div class="name">${esc(g.name)}</div><div class="short">${esc(g.exercises.map((e) => e.name).join(", "))}</div></div><div class="min">${g.minutes}</div></li>`; }).join("")}</ul>
+        <div class="ring ${s.full ? "full" : ""}">${s.full ? "✓" : `${s.done}/${s.tot}`}</div><div><div class="name">${esc(g.name)}</div><div class="short">${esc(g.exercises.map((e) => e.name).join(", "))}</div>${blockNote(plan, gi, g) ? `<div class="short bnote">${esc(blockNote(plan, gi, g))}</div>` : ""}</div><div class="min">${g.minutes}</div></li>`; }).join("")}</ul>
       <div class="foot"><button class="btn" data-act="go-calendar">Today's Calendar</button><button class="btn primary" data-act="end-workout">${p.saved ? "Workout summary" : "End workout"}</button></div>`;
+  }
+
+  /** The note shown under a block: the day's own note when one was typed (a block_note event), else the library's. */
+  function blockNote(plan, gi, g) {
+    const own = (S.events[plan.id] || []).filter((e) => e.kind === "block_note" && e.group_index === gi && e.exercise_index == null).slice(-1)[0];
+    return own ? (own.note || "") : (g.note || "");
+  }
+  /** The note under an exercise: the day's exercise_note when typed, else the library's cue. */
+  function exerciseNote(plan, gi, ei, e) {
+    const own = (S.events[plan.id] || []).filter((x) => x.kind === "exercise_note" && x.group_index === gi && x.exercise_index === ei).slice(-1)[0];
+    return own ? (own.note || "") : (e.cue || "");
   }
 
   function viewGroup() {
@@ -417,6 +428,8 @@
         <button class="btn" data-act="disable-push" ${canPush && !S.busy ? "" : "disabled"}>Turn off notifications on this device</button>
         <button class="btn" data-act="start-test">Start a test check-in</button>
         <div class="tier plain"><div class="t">Rules</div><div class="why">The numbers, the grid and the library the plan is built from. Every change needs a reason and takes effect tomorrow unless you apply it today.</div></div>
+        <button class="btn" data-act="open-ext" data-view="rules-goals">Goals</button>
+        <button class="btn" data-act="open-ext" data-view="rules-sched">Schedule</button>
         <button class="btn" data-act="open-ext" data-view="rules-thr">Thresholds</button>
         <button class="btn" data-act="open-ext" data-view="rules-sel">Selection grid</button>
         <button class="btn" data-act="open-ext" data-view="rules-lib">Library</button>
@@ -713,6 +726,6 @@
     }
   }
   // What the rules screens (rules.js) use from here.
-  window.PlannerCtx = { sb, fn, esc, busy, go, render, tierBox, S, denverDate, niceDate, loadDay, planFor, groupsOf, progress, applySubmit, viewCheckinV1: viewCheckin };
+  window.PlannerCtx = { sb, fn, esc, busy, go, render, tierBox, S, denverDate, niceDate, loadDay, planFor, groupsOf, progress, applySubmit, viewCheckinV1: viewCheckin, blockNote, exerciseNote };
   start();
 })();
