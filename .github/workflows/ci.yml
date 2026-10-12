@@ -32,10 +32,17 @@ jobs:
           if git grep -nIiE 'jess|wolfe|/Users/|allowlist|confluence' -- config.js; then echo "config.js may hold only public configuration"; exit 1; fi
 
       - name: Secret scan (gitleaks binary)
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -e
-          ver=$(curl -sSL https://api.github.com/repos/gitleaks/gitleaks/releases/latest | jq -r .tag_name)
-          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/${ver}/gitleaks_${ver#v}_linux_x64.tar.gz" | tar -xz gitleaks
+          # The releases API is rate limited for anonymous calls from shared runners (2026-10-12: it answered
+          # without a tag, the tarball URL answered with an error page, and tar failed on "not in gzip format").
+          # So: ask with the job token, and fall back to a pinned version when the answer carries no tag.
+          ver=$(curl -fsSL -H "Authorization: Bearer ${GH_TOKEN}" https://api.github.com/repos/gitleaks/gitleaks/releases/latest | jq -r '.tag_name // empty' || true)
+          case "$ver" in v*) ;; *) ver=v8.21.2 ;; esac
+          echo "gitleaks ${ver}"
+          curl -fsSL "https://github.com/gitleaks/gitleaks/releases/download/${ver}/gitleaks_${ver#v}_linux_x64.tar.gz" | tar -xz gitleaks
           ./gitleaks detect --source . --redact --no-banner --exit-code 1
 
       - name: JavaScript parses
