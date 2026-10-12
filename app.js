@@ -33,7 +33,6 @@
     followup: null,
     g: 0,
     e: 0,
-    shots: [],
     days: [],
     err: null,
     msg: null,
@@ -193,7 +192,7 @@
       if (S.err) html += `<div class="err">${esc(S.err)}</div>`;
       if (S.msg) html += `<div class="ok">${esc(S.msg)}</div>`;
       if (S.busy) html += `<div class="muted" style="padding:6px 4px">${esc(S.busy)}</div>`;
-      const views = { home: viewHome, checkin: viewCheckin, followup: viewFollowup, summary: viewSummary, group: viewGroup, exercise: viewExercise, end: viewEnd, calendar: viewCalendar, days: viewDays, settings: viewSettings };
+      const views = { home: viewHome, followup: viewFollowup, summary: viewSummary, group: viewGroup, exercise: viewExercise, end: viewEnd, calendar: viewCalendar, days: viewDays, settings: viewSettings };
       const ext = extView(v);
       html += ext ? ext.render() : (views[v] || viewHome)();
     }
@@ -251,37 +250,6 @@
       ${S.date === denverDate() ? `<button class="btn" data-act="start-checkin">Start check-in #${next}</button><button class="btn" data-act="start-test">Start a test check-in</button>` : ""}
     </div>`;
     return html;
-  }
-
-  function draft() {
-    const key = S.cur ? S.cur.id : "none";
-    S.ui.drafts = S.ui.drafts || {};
-    return (S.ui.drafts[key] = S.ui.drafts[key] || { meetTime: isWeekend(S.date) ? "" : "07:30", meetNone: false, sched: "", unusNone: false, unus: "", feel: "", feelText: "" });
-  }
-  function draftValid(d) {
-    const meet = d.meetNone || d.meetTime;
-    const unus = d.unusNone || (d.unus && d.unus.trim());
-    return !!(meet && unus && d.feel);
-  }
-
-  function viewCheckin() {
-    const c = S.cur, d = draft();
-    return `${tierBox("plain", `Check-in #${c.number}${c.is_test ? " (test)" : ""}`, "Tap to answer. Text is optional. Open Oura for a second so the ring syncs.")}
-      <div class="q"><div class="lab">Next commitment</div>
-        <div class="opts"><input type="time" id="meetTime" class="opt" aria-label="Next commitment time" value="${esc(d.meetTime)}" ${d.meetNone ? "disabled" : ""}><button class="opt" data-act="meet-none" aria-pressed="${d.meetNone}">None today</button></div>
-        <input class="txt" id="sched" placeholder="optional: in meetings till 11" aria-label="Schedule notes" value="${esc(d.sched)}"></div>
-      <div class="q"><div class="lab">Anything unusual</div>
-        <div class="opts one"><button class="opt" data-act="unus-none" aria-pressed="${d.unusNone}">Nothing</button></div>
-        <input class="txt" id="unus" placeholder="or type it: left toe weird, slept badly" aria-label="Unusual notes" value="${esc(d.unus)}"></div>
-      <div class="q"><div class="lab">How do you feel</div>
-        <div class="opts">${FEELS.map(([k, label]) => `<button class="opt" data-act="feel" data-v="${k}" aria-pressed="${d.feel === k}">${label}</button>`).join("")}</div>
-        <input class="txt" id="feelText" placeholder="optional: where or what" aria-label="Feel notes" value="${esc(d.feelText)}"></div>
-      <div class="q"><div class="lab">Oura shots</div>
-        <div class="shots"><div class="shot"><b>Readiness</b>score and contributors</div><div class="shot"><b>Sleep</b>score and key metrics</div></div>
-        <input class="file" id="shots" type="file" accept="image/*" multiple aria-label="Attach Oura screenshots">
-        <div class="thumbs">${S.shots.map((s, i) => `<img class="thumb" src="${s.preview}" alt="shot ${i + 1}" data-act="drop-shot" data-i="${i}" title="tap to remove">`).join("")}</div>
-        <p class="muted">${S.shots.length ? `${S.shots.length} attached. Tap one to remove it.` : "Optional today, but without them the plan is built from your answers only."}</p></div>
-      <div class="foot"><button class="btn primary" data-act="get-plan" ${draftValid(d) && !S.busy ? "" : "disabled"}>Get my plan</button></div>`;
   }
 
   function viewFollowup() {
@@ -459,15 +427,7 @@
       if (act === "toggle") ev.stopPropagation();
       await act$(act, el, ev);
     });
-    on("#meetTime", "change", (ev) => { const d = draft(); d.meetTime = ev.target.value; saveUI(); render(); });
-    on("#sched", "input", (ev) => { draft().sched = ev.target.value; saveUI(); });
-    on("#unus", "input", (ev) => { const d = draft(); d.unus = ev.target.value; if (ev.target.value) d.unusNone = false; saveUI(); const none = $("[data-act=unus-none]"), get = $("[data-act=get-plan]"); if (none) none.setAttribute("aria-pressed", String(d.unusNone)); if (get) get.disabled = !draftValid(d); });
-    on("#feelText", "input", (ev) => { draft().feelText = ev.target.value; saveUI(); });
     on("#email", "input", (ev) => { S.ui.signinEmailTyped = ev.target.value; });
-    on("#shots", "change", async (ev) => {
-      const files = Array.from(ev.target.files || []);
-      await busy("Preparing the shots", async () => { for (const f of files) S.shots.push(await fileToShot(f)); });
-    });
   }
 
   async function act$(act, el) {
@@ -513,7 +473,7 @@
       case "go-group": go("group"); return;
       case "go-calendar": go("calendar"); return;
       case "pick-checkin": S.cur = S.checkins.find((x) => x.id === el.dataset.id) || c; go(homeView()); return;
-      case "open-checkin": S.cur = S.checkins.find((x) => x.id === el.dataset.id) || c; S.shots = []; go("checkin"); return;
+      case "open-checkin": S.cur = S.checkins.find((x) => x.id === el.dataset.id) || c; go("checkin"); return;
       case "open-plan": S.cur = S.checkins.find((x) => x.id === el.dataset.id) || c; S.g = 0; S.e = 0; go("summary"); return;
       case "open-plan-id": { const plan = Object.values(S.plans).find((p) => p.id === el.dataset.plan); if (plan) { S.cur = S.checkins.find((x) => x.id === plan.checkin_id) || c; S.g = 0; S.e = 0; go("summary"); } return; }
       case "start-checkin":
@@ -524,26 +484,7 @@
           S.ui.checkinId = r.checkin.id; saveUI();
           await loadDay(r.checkin.date);
           S.cur = S.checkins.find((x) => x.id === r.checkin.id) || r.checkin;
-          S.shots = [];
           go("checkin");
-        });
-        return;
-      }
-      case "meet-none": { const d = draft(); d.meetNone = !d.meetNone; if (d.meetNone) d.meetTime = ""; else if (!d.meetTime) d.meetTime = "07:30"; saveUI(); render(); return; }
-      case "unus-none": { const d = draft(); d.unusNone = !d.unusNone; if (d.unusNone) d.unus = ""; saveUI(); render(); return; }
-      case "feel": { const d = draft(); d.feel = d.feel === el.dataset.v ? "" : el.dataset.v; saveUI(); render(); return; }
-      case "drop-shot": S.shots.splice(Number(el.dataset.i), 1); render(); return;
-      case "get-plan": {
-        const d = draft();
-        await busy(S.shots.length ? "Reading the shots and building your plan" : "Building your plan", async () => {
-          const body = {
-            checkin_id: c.id,
-            answers: { next_commitment: d.meetNone ? null : d.meetTime, none_today: d.meetNone, unusual_text: d.unusNone ? null : (d.unus || null), feel: d.feel, feel_text: d.feelText || null, schedule_notes: d.sched || null },
-          };
-          if (S.shots.length) body.screenshots = S.shots.map((s) => ({ name: s.name, base64: s.base64 }));
-          const r = await fn("checkin-submit", body);
-          S.shots = [];
-          await applySubmit(r);
         });
         return;
       }
@@ -629,32 +570,6 @@
     return planFor(c) ? "summary" : "home";
   }
 
-  // ---------- shots ----------
-  function readDataUrl(file) {
-    return new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(r.result); r.onerror = () => reject(new Error("could not read the file")); r.readAsDataURL(file); });
-  }
-  function loadImage(url) {
-    return new Promise((resolve, reject) => { const img = new Image(); img.onload = () => resolve(img); img.onerror = () => reject(new Error("this image could not be opened; send the screenshot, not a photo")); img.src = url; });
-  }
-  /** PNG and JPEG go up as they are; anything else (a HEIC photo) is drawn to a canvas and sent as JPEG. */
-  async function fileToShot(file) {
-    const isPng = file.type === "image/png", isJpeg = file.type === "image/jpeg";
-    if ((isPng || isJpeg) && file.size <= 9 * 1024 * 1024) {
-      const dataUrl = await readDataUrl(file);
-      return { name: file.name, base64: dataUrl.split(",")[1], preview: dataUrl };
-    }
-    const url = URL.createObjectURL(file);
-    try {
-      const img = await loadImage(url);
-      const scale = Math.min(1, 2000 / Math.max(img.naturalWidth, img.naturalHeight));
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.round(img.naturalWidth * scale); canvas.height = Math.round(img.naturalHeight * scale);
-      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
-      return { name: file.name.replace(/\.\w+$/, "") + ".jpg", base64: dataUrl.split(",")[1], preview: dataUrl };
-    } finally { URL.revokeObjectURL(url); }
-  }
-
   // ---------- sign-in link ----------
   /** The token hash and type carried by a pasted sign-in link, or null. Handles a link that was wrapped or padded by the mail app. */
   function linkTokens(text) {
@@ -726,6 +641,6 @@
     }
   }
   // What the rules screens (rules.js) use from here.
-  window.PlannerCtx = { sb, fn, esc, busy, go, render, tierBox, S, denverDate, niceDate, loadDay, planFor, groupsOf, progress, applySubmit, viewCheckinV1: viewCheckin, blockNote, exerciseNote };
+  window.PlannerCtx = { sb, fn, esc, busy, go, render, tierBox, S, denverDate, niceDate, loadDay, planFor, groupsOf, progress, applySubmit, blockNote, exerciseNote };
   start();
 })();

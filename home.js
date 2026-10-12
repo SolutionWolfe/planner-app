@@ -205,7 +205,6 @@
         S.ui.checkinId = r.checkin.id;
         await X.loadDay(H.today);
         S.cur = S.checkins.find((c) => c.id === r.checkin.id) || r.checkin;
-        S.shots = [];
         S.msg = null;
         go(S.cur.answered_at ? "home" : "checkin");
       });

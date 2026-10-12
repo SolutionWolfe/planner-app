@@ -1,12 +1,12 @@
-// Check-in #1 and the processing screen. The check-in asks the same three things as before, plus
-// which Prep entries are on today; the plan is then made from last night's values and the rules in
-// Settings. When the ring is not connected the values can be typed. While the plan is made the
-// screen says what it is doing.
+// The check-in and the processing screen. Check-in #1 asks three things, plus which Prep entries
+// are on today; a later check-in asks how much time is left; the plan is then made from last
+// night's values and the rules in Settings. When the ring is not connected, or is paused, the
+// values can be typed or left blank. While the plan is made the screen says what it is doing.
 (function () {
   "use strict";
   const X = window.PlannerCtx;
   if (!X) return;
-  const { sb, fn, esc, go, render, tierBox, S, denverDate, applySubmit, viewCheckinV1 } = X;
+  const { sb, fn, esc, go, render, tierBox, S, denverDate, applySubmit } = X;
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
   const FEELS = [["good", "Good"], ["okay", "Okay"], ["rough", "Rough"], ["pain", "Pain somewhere"]];
@@ -119,14 +119,13 @@
   function view() {
     const c = S.cur;
     if (!c) return tierBox("plain", "Check-in", "Nothing to answer.");
-    if (K.conn && K.conn.state === "paused" && viewCheckinV1) return viewCheckinV1();
     if (K.loadedFor !== c.id) { load(); return tierBox("plain", `Check-in #${c.number}`, "Loading."); }
     const d = draft();
     const kept = prepToday(d);
     const prepTotal = kept.reduce((s, p) => s + p.minutes, 0);
     const nightLine = connected()
       ? (needsManual() ? (K.syncing ? "Reading the ring again." : "Nothing from the ring for last night yet. Open Oura so it syncs and come back; or type what you know below.") : "Last night is in.")
-      : "The ring is not connected. Type what you know below, or leave it blank and the plan comes from your answers.";
+      : `The ring is ${K.conn && K.conn.state === "paused" ? "paused" : "not connected"}. Type what you know below, or leave it blank and the plan comes from your answers.`;
     const feelBlock = `<div class="q"><div class="lab">How do you feel${laterCheckin() ? " now" : ""}</div>
         <div class="opts">${FEELS.map(([k, label]) => `<button class="opt" data-c="feel" data-v="${k}" aria-pressed="${d.feel === k}">${label}</button>`).join("")}</div>
         <input class="txt" id="feelText" placeholder="optional: where or what" aria-label="Feel notes" value="${esc(d.feelText)}"></div>`;
@@ -185,14 +184,14 @@
     const manual = {};
     for (const k of ["readiness", "sleep_score", "resting_hr", "avg_hrv", "temp_f"]) { const v = d.manual[k]; if (v !== "" && v != null && !Number.isNaN(Number(v))) manual[k] = Number(v); }
     const body = laterCheckin()
-      ? { checkin_id: c.id, v2: true, time_left: timeLeft(d), answers: { feel: d.feel, feel_text: d.feelText || null } }
+      ? { checkin_id: c.id, time_left: timeLeft(d), answers: { feel: d.feel, feel_text: d.feelText || null } }
       : {
-        checkin_id: c.id, v2: true, unusual_flag: !!d.unusYes,
+        checkin_id: c.id, unusual_flag: !!d.unusYes,
         answers: { next_commitment: d.meetNone ? null : d.meetTime, none_today: d.meetNone, unusual_text: d.unusYes ? (d.unus || null) : null, feel: d.feel, feel_text: d.feelText || null, schedule_notes: d.sched || null },
         prep: prepToday(d).map((p) => ({ key: p.key, minutes: p.minutes })),
       };
     if (!laterCheckin() && needsManual() && Object.keys(manual).length) body.values = manual;
-    S.v2Extra = laterCheckin() ? { v2: true, time_left: body.time_left } : { v2: true, prep: body.prep }; // a follow-up answer or a resume carries the same choices
+    S.v2Extra = laterCheckin() ? { time_left: body.time_left } : { prep: body.prep }; // a follow-up answer or a resume carries the same choices
     P.on = true; P.step = 0; P.slow = false; P.error = null; P.started = Date.now();
     go("processing");
     P.timer = setTimeout(tick, 900);
