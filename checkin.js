@@ -82,7 +82,7 @@
         sb.from("effective_training_groups").select("key, name").is("retired_at", null),
       ]);
       K.conn = conn;
-      // The goal (step 8c, D97): which day of its schedule this is and what the slot brings. Nothing to answer.
+      // The goal: which day of its schedule this is and what the slot brings. Nothing to answer.
       K.goal = (goals.data || [])[0] || null;
       K.sched = sched.data || [];
       K.groupNames = Object.fromEntries((groups.data || []).map((g) => [g.key, g.name]));
@@ -98,7 +98,7 @@
   }
 
   const connected = () => K.conn && K.conn.state === "connected";
-  /** The line at the top of the check-in: the goal's day and the sessions this slot brings (D97). */
+  /** The line at the top of the check-in: the goal's day and the sessions this slot brings. */
   function goalLine() {
     const g = K.goal;
     if (!g) return "";

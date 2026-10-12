@@ -371,7 +371,7 @@
     $$(".set [data-k]").forEach((el) => el.addEventListener("change", () => edited(el)));
     $$("[data-n]").forEach((el) => el.addEventListener("change", () => noted(el)));
   }
-  /** A note typed under the block or an exercise is saved for today, one events row, the library unchanged (D99). */
+  /** A note typed under the block or an exercise is saved for today, one events row, the library unchanged. */
   async function noted(el) {
     const { plan } = current();
     if (!plan) return;

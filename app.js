@@ -321,7 +321,7 @@
       <div class="foot"><button class="btn" data-act="go-calendar">Today's Calendar</button><button class="btn primary" data-act="end-workout">${p.saved ? "Workout summary" : "End workout"}</button></div>`;
   }
 
-  /** The note shown under a block: the day's own note when one was typed (a block_note event), else the library's (D99). */
+  /** The note shown under a block: the day's own note when one was typed (a block_note event), else the library's. */
   function blockNote(plan, gi, g) {
     const own = (S.events[plan.id] || []).filter((e) => e.kind === "block_note" && e.group_index === gi && e.exercise_index == null).slice(-1)[0];
     return own ? (own.note || "") : (g.note || "");

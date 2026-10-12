@@ -92,7 +92,7 @@
 
   const liveGroups = () => R.groups.filter((g) => !g.retired_at);
   const group = (k) => R.groups.find((g) => g.key === k);
-  /** The session types: every live group but Prep; PT (morning_pt) reads the Morning and Later grids by slot (D96). */
+  /** The session types: every live group but Prep; PT (morning_pt) reads the Morning and Later grids by slot. */
   const sessionGroups = () => liveGroups().filter((g) => g.key !== "prep");
   const gridName = (k) => (k === "morning" ? "PT, morning" : k === "later" ? "PT, later" : (group(k) || {}).name || k);
   const activeGoal = () => R.goals.find((g) => g.active && !g.retired_at) || null;
@@ -148,7 +148,7 @@
   }
 
   // ---------- selection grid ----------
-  /** The cell for a grid, tier and column: the row for the phase when one exists, else the row for every phase (D98). */
+  /** The cell for a grid, tier and column: the row for the phase when one exists, else the row for every phase. */
   const cell = (grid, tier, col, phase) => {
     const mine = R.cells.filter((c) => c.grid === grid && c.tier === tier && c.window_cell === col);
     return (phase != null && mine.find((c) => c.phase === phase)) || mine.find((c) => c.phase == null) || null;
@@ -318,7 +318,7 @@
       ${reasonBox()}<div class="foot col"><button class="btn primary" data-r="tpl-save" data-when="tomorrow">Save from tomorrow</button><button class="btn quiet" data-r="tpl-save" data-when="today">Apply today instead</button></div>`;
   }
 
-  // ---------- goals (D97, D101) ----------
+  // ---------- goals ----------
   function viewGoals() {
     const g = activeGoal(), others = R.goals.filter((x) => !x.retired_at && !(g && x.key === g.key));
     const days = g ? Math.max(1, schedDays(g.key)) : 0;
@@ -342,7 +342,7 @@
     return `<div class="h2">${R.sheet.key ? esc(d.name) : "New goal"}</div>
       <label class="fld"><span>Goal name</span><input type="text" id="gl-name" value="${esc(d.name)}" maxlength="60" placeholder="e.g. Challenge, my version"></label>
       <label class="fld"><span>Phases</span><input type="number" id="gl-phases" inputmode="numeric" min="1" max="12" value="${d.phases}"></label>
-      <p class="muted">${R.sheet.key ? "Fewer phases than the current one moves the phase to the new last one." : "A new goal becomes the active one, at phase 1, day 1, with a one-day schedule (PT in the morning) to fill in."} A save for today restarts today.</p>
+      <p class="muted">${R.sheet.key ? "Fewer phases than the current one moves the phase to the new last one." : "A new goal becomes the active one, at its first phase and first day, with a one-day schedule (PT in the morning) to fill in."} A save for today restarts today.</p>
       ${reasonBox()}<div class="acts"><button class="btn sm" data-r="sheet-close">Cancel</button><button class="btn sm dark" data-r="goal-save" data-when="today">Save for today</button><button class="btn sm" data-r="goal-save" data-when="tomorrow">Save from tomorrow</button></div>`;
   }
   /** Restart today (D101): a later check-in on the goal's morning slot for the time left; done work stays done. */
