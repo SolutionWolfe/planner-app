@@ -340,7 +340,7 @@
   function sheetGoal() {
     const d = R.sheet.draft;
     return `<div class="h2">${R.sheet.key ? esc(d.name) : "New goal"}</div>
-      <label class="fld"><span>Goal name</span><input type="text" id="gl-name" value="${esc(d.name)}" maxlength="60" placeholder="e.g. Challenge, my version"></label>
+      <label class="fld"><span>Goal name</span><input type="text" id="gl-name" value="${esc(d.name)}" maxlength="60" placeholder="e.g. Six-phase program"></label>
       <label class="fld"><span>Phases</span><input type="number" id="gl-phases" inputmode="numeric" min="1" max="12" value="${d.phases}"></label>
       <p class="muted">${R.sheet.key ? "Fewer phases than the current one moves the phase to the new last one." : "A new goal becomes the active one, at its first phase and first day, with a one-day schedule (PT in the morning) to fill in."} A save for today restarts today.</p>
       ${reasonBox()}<div class="acts"><button class="btn sm" data-r="sheet-close">Cancel</button><button class="btn sm dark" data-r="goal-save" data-when="today">Save for today</button><button class="btn sm" data-r="goal-save" data-when="tomorrow">Save from tomorrow</button></div>`;
