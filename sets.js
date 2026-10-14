@@ -257,18 +257,39 @@
     const x = setsOf(plan, S.g, ei, g.exercises[ei], st);
     return { plan, ei, si, st, x, set: si == null ? null : x.sets[si], name: g.exercises[ei].name };
   }
+  /** One set row's values as its fields read right now (minutes and seconds, reps, weight, band), over `base`. */
+  function fieldsOf(row, base) {
+    const val = (k) => { const i = row.querySelector(`[data-k="${k}"]`); return i ? i.value : null; };
+    const num = (v) => (v === null || v === "" ? null : Math.max(0, Number(v) || 0));
+    const actual = { ...base };
+    if (val("mm") !== null) actual.seconds = Math.round((num(val("mm")) || 0) * 60 + (num(val("ss")) || 0));
+    if (val("r") !== null) actual.reps = num(val("r")) === null ? null : Math.round(num(val("r")));
+    if (val("w") !== null) actual.load_lb = num(val("w")) || 0;
+    if (val("band") !== null) actual.band = val("band") || null;
+    return actual;
+  }
+  /** The values of set `si` of the exercise `el` belongs to, as the screen shows them. A tap on the ring right after a field was
+   *  changed must carry the new numbers, not the ones the replay still holds while that change is being saved (V3-38). */
+  function onScreen(el, c, si) {
+    const s = c.x.sets[si];
+    const tag = el.dataset.a ? `[data-a="${el.dataset.a}"]` : `[data-e="${el.dataset.e}"]`;
+    const field = $(`.set [data-k]${tag}[data-i="${si}"]`), row = field && field.closest(".set");
+    if (!s) return clean({});
+    return row ? fieldsOf(row, s.actual) : { ...s.actual };
+  }
   const actions = {
     /** A tap on a set's ring: done, or open again. The last set done records the exercise as done. */
     "done": async (el) => {
       const c = at(el), rows = live(c.x.sets), doneNow = !c.set.done;
+      const now = onScreen(el, c, c.si);
       if (!doneNow) {
         // Sets that only counted as done because the whole exercise was checked are recorded first, so they stay done.
-        for (const r of rows) if (r.i !== c.si && r.s.done && !r.s.own) { if (!(await send(c.plan, { exercise_index: c.ei, set_index: r.i, kind: "set_done", planned: r.s.planned, actual: r.s.actual }, true))) return; }
+        for (const r of rows) if (r.i !== c.si && r.s.done && !r.s.own) { if (!(await send(c.plan, { exercise_index: c.ei, set_index: r.i, kind: "set_done", planned: r.s.planned, actual: onScreen(el, c, r.i) }, true))) return; }
       }
       const allDone = doneNow && rows.every((r) => r.i === c.si || r.s.done);
       const exercise = allDone && c.st !== "done" ? "done" : (!doneNow && c.st === "done" ? "open" : undefined);
-      E.status = `${c.name}, set ${rows.findIndex((r) => r.i === c.si) + 1}: ${doneNow ? "done, " + words(c.x.mode, c.set.actual) : "open again"}.`;
-      await send(c.plan, { exercise_index: c.ei, set_index: c.si, kind: doneNow ? "set_done" : "set_undone", planned: c.set.planned, actual: c.set.actual, exercise });
+      E.status = `${c.name}, set ${rows.findIndex((r) => r.i === c.si) + 1}: ${doneNow ? "done, " + words(c.x.mode, now) : "open again"}.`;
+      await send(c.plan, { exercise_index: c.ei, set_index: c.si, kind: doneNow ? "set_done" : "set_undone", planned: c.set.planned, actual: now, exercise });
     },
     "rm": async (el) => {
       const c = at(el), rows = live(c.x.sets);
@@ -350,13 +371,7 @@
   async function edited(el) {
     const c = at(el);
     if (!c || !c.set) return;
-    const row = el.closest(".set"), val = (k) => { const i = row.querySelector(`[data-k="${k}"]`); return i ? i.value : null; };
-    const num = (v) => (v === null || v === "" ? null : Math.max(0, Number(v) || 0));
-    const actual = { ...c.set.actual };
-    if (val("mm") !== null) actual.seconds = Math.round((num(val("mm")) || 0) * 60 + (num(val("ss")) || 0));
-    if (val("r") !== null) actual.reps = num(val("r")) === null ? null : Math.round(num(val("r")));
-    if (val("w") !== null) actual.load_lb = num(val("w")) || 0;
-    if (val("band") !== null) actual.band = val("band") || null;
+    const actual = fieldsOf(el.closest(".set"), c.set.actual);
     if (JSON.stringify(actual) === JSON.stringify(c.set.actual)) return;
     const ok = c.add
       ? await sendAdded({ added_id: c.add.id, set_index: c.si, kind: "set_edit", planned: c.set.planned, actual }, true)
