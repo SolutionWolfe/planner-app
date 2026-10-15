@@ -15,16 +15,10 @@
   const LEFT = [["30", "30 min"], ["60", "1 hr"], ["120", "2 hrs"], ["none", "None"], ["other", "Other"]];
   const P = { on: false, step: 0, timer: null, slow: false, error: null, started: 0 };
 
-  function isWeekend(date) {
-    const [y, m, d] = date.split("-").map(Number);
-    const w = new Date(Date.UTC(y, m - 1, d, 12)).getUTCDay();
-    return w === 0 || w === 6;
-  }
-
   function draft() {
     const key = S.cur ? S.cur.id : "none";
     S.ui.v2drafts = S.ui.v2drafts || {};
-    return (S.ui.v2drafts[key] = S.ui.v2drafts[key] || { meetTime: isWeekend(S.date || denverDate()) ? "" : "07:30", meetNone: false, sched: "", unusNone: false, unus: "", unusYes: false, feel: "", feelText: "", prepOff: [], prepMin: {}, manual: {}, left: "", leftMin: "" });
+    return (S.ui.v2drafts[key] = S.ui.v2drafts[key] || { meetTime: "", meetNone: false, sched: "", unusNone: false, unus: "", unusYes: false, feel: "", feelText: "", prepOff: [], prepMin: {}, manual: {}, left: "", leftMin: "" });
   }
   function save() { try { localStorage.setItem("planner-ui", JSON.stringify(S.ui)); } catch { /* fine without it */ } }
   const laterCheckin = () => !!(S.cur && S.cur.number > 1);
@@ -213,7 +207,7 @@
     const d = draft();
     $$("[data-c]").forEach((el) => el.addEventListener("click", async () => {
       const a = el.dataset.c;
-      if (a === "meet-none") { d.meetNone = !d.meetNone; if (d.meetNone) d.meetTime = ""; else if (!d.meetTime) d.meetTime = "07:30"; save(); render(); }
+      if (a === "meet-none") { d.meetNone = !d.meetNone; if (d.meetNone) d.meetTime = ""; save(); render(); }
       else if (a === "unus-none") { d.unusNone = !d.unusNone; if (d.unusNone) { d.unusYes = false; d.unus = ""; } save(); render(); }
       else if (a === "unus-yes") { d.unusYes = !d.unusYes; if (d.unusYes) d.unusNone = false; save(); render(); }
       else if (a === "left") { d.left = el.dataset.v; save(); render(); }
